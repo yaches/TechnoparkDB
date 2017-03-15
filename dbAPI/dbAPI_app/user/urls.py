@@ -1,9 +1,8 @@
 from django.conf.urls import url, include
 
-# from . import views
-from dbAPI_app.user.views import create
+from dbAPI_app.user.views import create, profile
 
 urlpatterns = [
     url(r'^(?P<nickname>[\S]+)/create', create, name = 'create'),
-    # url(r'^(?P<nickname>)/profile/', views.profile, name = profile)
+    url(r'^(?P<nickname>[\S]+)/profile', profile, name = 'profile')
 ]

@@ -1,22 +1,50 @@
 from django.http import JsonResponse
-from json import loads
+import json
 from django.views.decorators.csrf import csrf_exempt
 from django.db import connection, DatabaseError, IntegrityError
 
+from dbAPI_app.helpers.helpers import *
+from dbAPI_app.queries.users import *
+
+
 @csrf_exempt
 def create(request, nickname):
-	# args = loads(request.body)
-	args = {}
-	args['nickname'] = nickname
-	# print(args)
+	params = json.loads(request.body)
+	params['nickname'] = nickname
 	cursor = connection.cursor()
-	cursor.execute('DROP TABLE IF EXISTS persons')
-	cursor.execute('CREATE TABLE Persons (\
-    PersonID int,\
-    LastName varchar(255),\
-    FirstName varchar(255),\
-    Address varchar(255),\
-    City varchar(255) \
-);')
+
+	cursor.execute(CHECK_USERS_EXIST, [nickname, params['email']])
+	if cursor.rowcount != 0:
+		users = dictfetchall(cursor)
+		cursor.close()
+		return JsonResponse(users, status = 409, safe = False)
+
+	cursor.execute(CREATE_USER, [nickname, params['email'], params['fullname'], params['about']])
+
 	cursor.close()
-	return JsonResponse(args, status = 201)
+	return JsonResponse(params, status = 201)
+
+
+@csrf_exempt
+def profile(request, nickname):
+	cursor = connection.cursor()
+	if request.method == "GET":
+		cursor.execute(SELECT_USER_BY_NICKNAME, [nickname])
+		if cursor.rowcount == 0:
+			cursor.close()
+			return JsonResponse({}, status = 404)
+		else:
+			user = dictfetchall(cursor)[0]
+			cursor.close()
+			return JsonResponse(user, status = 200)
+	else:
+		params = json.loads(request.body)
+		params['nickname'] = nickname
+		try:
+			cursor.execute(UPDATE_USER, [params['email'], params['fullname'], params['about'], nickname])
+		except:
+			cursor.close()
+			return JsonResponse({}, status = 409)
+
+		cursor.close()
+		return JsonResponse(params, status = 200)

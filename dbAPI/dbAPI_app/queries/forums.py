@@ -11,5 +11,3 @@ SELECT_FORUM_BY_SLUG = u'''
 			SELECT * FROM "forums"
 			WHERE "slug" = %s
 		'''
-
-		

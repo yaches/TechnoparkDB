@@ -9,13 +9,25 @@ from dbAPI_app.helpers.helpers import *
 from dbAPI_app.queries.forums import *
 from dbAPI_app.queries.users import *
 from dbAPI_app.queries.threads import *
+from dbAPI_app.queries.common import *
 
 @csrf_exempt
 def create(request):
 	params = json.loads(request.body)
+	slug = params['slug']
+	title = params['title']
+	user = params['user']
+	posts = params['posts'] if 'posts' in params else None
+	threads = params['threads'] if 'threads' in params else None
+
 	cursor = connection.cursor()
 
-	cursor.execute(SELECT_FORUM_BY_SLUG, [params['slug']])	
+	cursor.execute(SELECT_USER_BY_NICKNAME, [user])
+	if cursor.rowcount > 0:
+		profile = dictfetchall(cursor)[0]
+		user = params['user'] = profile['nickname']
+
+	cursor.execute(SELECT_FORUM_BY_SLUG, [slug])	
 	if cursor.rowcount > 0:
 		forum = dictfetchall(cursor)[0]
 		cursor.close()
@@ -23,15 +35,11 @@ def create(request):
 
 	try:
 		cursor.execute(CREATE_FORUM, [
-			params['slug'], params['title'], params['user']
+			slug, title, user, posts, threads
 		])
-	except:
+	except IntegrityError:
 		cursor.close()
 		return JsonResponse({}, status = 404)
-
-	cursor.execute(SELECT_USER_BY_NICKNAME, [params['user']])
-	nickname = dictfetchall(cursor)[0]['nickname']
-	params['user'] = nickname
 
 	cursor.close()
 	return JsonResponse(params, status = 201)
@@ -47,10 +55,6 @@ def details(request, slug):
 
 	forum = dictfetchall(cursor)[0]
 
-	cursor.execute(SELECT_USER_BY_NICKNAME, [forum['user']])
-	nickname = dictfetchall(cursor)[0]['nickname']
-	forum['user'] = nickname
-
 	cursor.close()
 	return JsonResponse(forum, status = 200)
 
@@ -61,28 +65,37 @@ def create_thread(request, slug):
 	author = params['author']
 	message = params['message']
 	title = params['title']
-	created = params['created'] if 'created' in params else None
+	created = params['created'] if 'created' in params else curtime()
 	thread_slug = params['slug'] if 'slug' in params else None
-	votes = params['votes'] if 'votes' in params else None
 
 	cursor = connection.cursor()
+
+	cursor.execute(SELECT_FORUM_BY_SLUG, [slug])
+	if cursor.rowcount > 0:
+		forum = dictfetchall(cursor)[0]
+		slug = params['forum'] = forum['slug']
+	else:
+		cursor.close()
+		return JsonResponse({}, status = 404)
 
 	cursor.execute(SELECT_THREAD_BY_SLUG, [thread_slug])
 	if cursor.rowcount > 0:
 		thread = dictfetchall(cursor)[0]
+		thread['created'] = localtime(thread['created'])
 		cursor.close()
 		return JsonResponse(thread, status = 409)
 
 	try:
 		cursor.execute(CREATE_THREAD, [
-			thread_slug, title, message, author, created, slug
+			title, message, author, slug, created, thread_slug
 		])
-	except:
+	except IntegrityError:
 		cursor.close()
 		return JsonResponse({}, status = 404)
 
 	thread_id = dictfetchall(cursor)[0]['id']
 	params['id'] = thread_id
+	params['forum'] = slug
 
 	cursor.close()
 	return JsonResponse(params, status = 201)
@@ -123,8 +136,7 @@ def get_threads(request, slug):
 	threads = dictfetchall(cursor)
 	
 	for thread in threads:
-		zone = pytz.timezone('Europe/Moscow')
-		thread['created'] = thread['created'].astimezone(zone)
+		thread['created'] = localtime(thread['created'])
 
 	cursor.close()
 	return JsonResponse(threads, status = 200, safe = False)

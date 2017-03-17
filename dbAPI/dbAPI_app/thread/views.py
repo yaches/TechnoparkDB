@@ -129,12 +129,26 @@ def details(request,  query, identifier):
 
 @csrf_exempt
 def id_posts(request, id):
-	return posts(request, SELECT_THREAD_BY_ID, SELECT_POSTS_BY_THREAD_ID, id)
+	sort = request.GET.get('sort', 'flat')
+
+	if sort == 'tree':
+		query = SELECT_POSTS_BY_THREAD_ID_TREE
+	else:
+		query = SELECT_POSTS_BY_THREAD_ID
+
+	return posts(request, SELECT_THREAD_BY_ID, query, id)
 
 
 @csrf_exempt
 def slug_posts(request, slug):
-	return posts(request, SELECT_THREAD_BY_SLUG, SELECT_POSTS_BY_THREAD_SLUG, slug)
+	sort = request.GET.get('sort', 'flat')
+
+	if sort == 'tree':
+		query = SELECT_POSTS_BY_THREAD_SLUG_TREE
+	else:
+		query = SELECT_POSTS_BY_THREAD_SLUG
+
+	return posts(request, SELECT_THREAD_BY_SLUG, query, slug)
 
 
 @csrf_exempt

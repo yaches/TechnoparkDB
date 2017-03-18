@@ -6,6 +6,12 @@ CREATE_THREAD = u'''
 			RETURNING "id"
 		'''
 
+UPDATE_THREAD = u'''
+			UPDATE "threads"
+			SET "title" = %s, "message" = %s
+			WHERE "id" = %s
+		'''
+
 SELECT_THREAD_BY_SLUG = u'''
 			SELECT "threads".*, SUM("voice") AS "votes" FROM "threads"
 			LEFT JOIN "votes" ON "votes"."thread" = "threads"."id"

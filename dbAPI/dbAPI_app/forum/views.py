@@ -17,8 +17,8 @@ def create(request):
 	slug = params['slug']
 	title = params['title']
 	user = params['user']
-	posts = params['posts'] if 'posts' in params else None
-	threads = params['threads'] if 'threads' in params else None
+	posts = params['posts'] if 'posts' in params else 0
+	threads = params['threads'] if 'threads' in params else 0
 
 	cursor = connection.cursor()
 
@@ -97,6 +97,8 @@ def create_thread(request, slug):
 	params['id'] = thread_id
 	params['forum'] = slug
 
+	cursor.execute(INCREASE_FORUM_THREADS, [1, slug])
+
 	cursor.close()
 	return JsonResponse(params, status = 201)
 
@@ -140,3 +142,44 @@ def get_threads(request, slug):
 
 	cursor.close()
 	return JsonResponse(threads, status = 200, safe = False)
+
+
+@csrf_exempt
+def get_users(request, slug):
+	limit = request.GET.get('limit', False)
+	since = request.GET.get('since', False)
+	desc = request.GET.get('desc', False)
+	desc = True if desc == 'true' else False
+
+	args = [slug, slug]
+
+	if since:
+		args.append(since)
+		if desc:
+			query = SELECT_USERS_BY_FORUM_WHERE_DESC
+		else:
+			query = SELECT_USERS_BY_FORUM_WHERE
+	else:
+		if desc:
+			query = SELECT_USERS_BY_FORUM_DESC
+		else:
+			query = SELECT_USERS_BY_FORUM
+
+	if limit:
+		query += WITH_LIMIT
+		args.append(limit)
+
+	cursor = connection.cursor()
+	cursor.execute(SELECT_FORUM_BY_SLUG, [slug])
+	if cursor.rowcount == 0:
+		cursor.close()
+		return JsonResponse({}, status = 404)
+
+	print(query)
+	print(args)
+
+	cursor.execute(query, args)
+	users = dictfetchall(cursor)
+	
+	cursor.close()
+	return JsonResponse(users, status = 200, safe = False)

@@ -29,8 +29,7 @@ RUN echo "host all  all    0.0.0.0/0  md5" >> /etc/postgresql/$PGVER/main/pg_hba
 RUN echo "listen_addresses='*'" >> /etc/postgresql/$PGVER/main/postgresql.conf
 
 # Expose the PostgreSQL port
-#EXPOSE 5432
-EXPOSE 5000
+EXPOSE 5432
 
 # Add VOLUMEs to allow backup of config, logs and databases
 VOLUME  ["/etc/postgresql", "/var/log/postgresql", "/var/lib/postgresql"]
@@ -42,23 +41,31 @@ USER root
 # Сборка проекта
 #
 
-# Установка JDK
-#RUN apt-get install -y openjdk-8-jdk-headless
-#RUN apt-get install -y maven
+# Установка Python
+RUN apt-get install -y python
+RUN apt-get install -y django
+RUN apt-get install -y python-pip
+RUN apt-get install -y gunicorn
+RUN pip install pytz
+RUN pip install psycopg2
 
 # Копируем исходный код в Docker-контейнер
-#ENV WORK /opt/Park_DB_API_Project
-#ADD db_api/ $WORK/db_api/
+ENV WORK /opt/TechnoparkDB
+ADD dbAPI/ $WORK/dbAPI/
+ADD start.sh $WORK/start.sh
+ADD schema.sql $WORK/schema.sql
 
 # Собираем и устанавливаем пакет
-#WORKDIR $WORK/db_api
+#WORKDIR $WORK/
 #RUN mvn package
 
 # Объявлем порт сервера
-#EXPOSE 5000
+EXPOSE 5000
+
+# Создаем базу
+RUN $WORK/start.sh
 
 #
 # Запускаем PostgreSQL и сервер
 #
-#CMD service postgresql start && java -Xmx300M -Xmx300M -jar $WORK/db_api/target/DB_Project-1.0-SNAPSHOT.jar
-CMD service postgresql start 
+CMD service postgresql start && gunicorn -b :5000 $WORK/dbAPI/dbAPI.wsgi

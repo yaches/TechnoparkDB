@@ -34,6 +34,7 @@ def profile(request, nickname):
 		return JsonResponse({}, status = 404)
 	
 	user = dictfetchall(cursor)[0]
+
 	if request.method == 'GET':
 		cursor.close()
 		return JsonResponse(user, status = 200)
@@ -54,7 +55,7 @@ def profile(request, nickname):
 			cursor.execute(UPDATE_USER, [
 				params['email'], params['fullname'], params['about'], nickname
 			])
-		except:
+		except IntegrityError:
 			cursor.close()
 			return JsonResponse({}, status = 409)
 

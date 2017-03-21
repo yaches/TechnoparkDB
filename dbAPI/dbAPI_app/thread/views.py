@@ -26,12 +26,14 @@ def id_create(request, id, **kwargs):
 		else:
 			thread = dictfetchall(cursor)[0]
 
+	all_created = curtime()
+
 	adding_posts = 0
 
 	for post in params:
 		author = post['author']
 		message = post['message']
-		created = post['created'] if 'created' in post else curtime()
+		created = post['created'] if 'created' in post else all_created
 		isEdited = post['isEdited'] if 'isEdited' in post else None
 		parent = post['parent'] if 'parent' in post else None
 
@@ -41,16 +43,10 @@ def id_create(request, id, **kwargs):
 				parent_post = dictfetchall(cursor)[0]
 				parent_thread = parent_post['thread']
 				if parent_thread != id:
-					try:
-						cursor.execute(INCREASE_FORUM_POSTS, [adding_posts, params[0]['forum']])
-					except:
-						pass
+					cursor.close()
 					return JsonResponse({}, status = 409)
 			else:
-				try:
-					cursor.execute(INCREASE_FORUM_POSTS, [adding_posts, params[0]['forum']])
-				except:
-					pass
+				cursor.close()
 				return JsonResponse({}, status = 409)
 
 		try:
@@ -58,10 +54,7 @@ def id_create(request, id, **kwargs):
 				message, author, thread['forum'], id, created, parent, isEdited
 			])
 		except IntegrityError:
-			try:
-				cursor.execute(INCREASE_FORUM_POSTS, [adding_posts, params[0]['forum']])
-			except:
-				pass
+			cursor.close()
 			return JsonResponse({}, status = 404)
 
 		adding_posts += 1
@@ -71,10 +64,7 @@ def id_create(request, id, **kwargs):
 		post['forum'] = thread['forum']
 		post['thread'] = id
 
-	try:
-		cursor.execute(INCREASE_FORUM_POSTS, [adding_posts, params[0]['forum']])
-	except:
-		pass
+	cursor.execute(INCREASE_FORUM_POSTS, [adding_posts, params[0]['forum']])
 
 	cursor.close()
 	return JsonResponse(params, status = 201, safe = False)
@@ -176,13 +166,17 @@ def details(request,  query, identifier):
 @csrf_exempt
 def id_posts(request, id):
 	sort = request.GET.get('sort', 'flat')
+	desc = request.GET.get('desc', 'false')
 
 	if sort == 'tree':
 		query = SELECT_POSTS_BY_THREAD_ID_TREE
 	elif sort == 'parent_tree':
 		query = SELECT_POSTS_BY_THREAD_ID_PARENT_TREE
 	else:
-		query = SELECT_POSTS_BY_THREAD_ID
+		if desc == 'false':
+			query = SELECT_POSTS_BY_THREAD_ID
+		else:
+			query = SELECT_POSTS_BY_THREAD_ID_DESC
 
 	return posts(request, SELECT_THREAD_BY_ID, query, id)
 
@@ -190,13 +184,17 @@ def id_posts(request, id):
 @csrf_exempt
 def slug_posts(request, slug):
 	sort = request.GET.get('sort', 'flat')
+	desc = request.GET.get('desc', 'false')
 
 	if sort == 'tree':
 		query = SELECT_POSTS_BY_THREAD_SLUG_TREE
 	elif sort == 'parent_tree':
 		query = SELECT_POSTS_BY_THREAD_SLUG_PARENT_TREE
 	else:
-		query = SELECT_POSTS_BY_THREAD_SLUG
+		if desc == 'false':	
+			query = SELECT_POSTS_BY_THREAD_SLUG
+		else:
+			query = SELECT_POSTS_BY_THREAD_SLUG_DESC
 
 	return posts(request, SELECT_THREAD_BY_SLUG, query, slug)
 
@@ -223,7 +221,7 @@ def posts(request, check_query, query, identifier):
 		else:
 			limit_query = 'ALL'
 	else:
-		if desc:
+		if desc and sort == 'tree':
 			query += WITH_DESC
 
 		if limit:
@@ -252,7 +250,6 @@ def posts(request, check_query, query, identifier):
 	if sort == 'parent_tree':
 		query = query % (desc_query, limit_query, offset_query)
 		args = [identifier]
-		print(query)
 
 	cursor.execute(query, args)
 

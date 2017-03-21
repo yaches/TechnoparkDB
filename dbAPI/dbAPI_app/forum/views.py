@@ -175,9 +175,6 @@ def get_users(request, slug):
 		cursor.close()
 		return JsonResponse({}, status = 404)
 
-	print(query)
-	print(args)
-
 	cursor.execute(query, args)
 	users = dictfetchall(cursor)
 	

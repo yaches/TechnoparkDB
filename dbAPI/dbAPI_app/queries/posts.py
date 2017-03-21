@@ -14,7 +14,13 @@ POST_UPDATE_MESSAGE = u'''
 SELECT_POSTS_BY_THREAD_ID = u'''
 			SELECT * FROM "posts"
 			WHERE "thread" = %s
-			ORDER BY "created"
+			ORDER BY "created", "id"
+		'''
+
+SELECT_POSTS_BY_THREAD_ID_DESC = u'''
+			SELECT * FROM "posts"
+			WHERE "thread" = %s
+			ORDER BY "created" DESC, "id" DESC
 		'''
 
 SELECT_POSTS_BY_THREAD_SLUG = u'''
@@ -22,7 +28,15 @@ SELECT_POSTS_BY_THREAD_SLUG = u'''
 			WHERE "thread" = (
 				SELECT "id" FROM "threads"
 				WHERE "slug" = %s
-			) ORDER BY "created"
+			) ORDER BY "created", "id"
+		'''
+
+SELECT_POSTS_BY_THREAD_SLUG_DESC = u'''
+			SELECT * FROM "posts"
+			WHERE "thread" = (
+				SELECT "id" FROM "threads"
+				WHERE "slug" = %s
+			) ORDER BY "created" DESC, "id" DESC
 		'''
 
 SELECT_POSTS_BY_THREAD_ID_TREE = u'''
@@ -99,18 +113,3 @@ SELECT_POST_BY_ID = u'''
 			SELECT * FROM "posts" AS p
 			WHERE "id" = %s
 		'''
-
-# WHERE_ID = u'''
-# 			WHERE "id" = %s
-# 		'''
-
-# JOIN_USERS = u'''
-# 			JOIN "users" AS u ON p."author" = u."nickname"
-# 		'''
-
-# JOIN_THREADS = u'''
-# 			JOIN "threads" AS t ON p."thread" = t."id"
-# 		'''
-
-# JOIN_FORUMS = u'''
-# 			JOIN "forums" AS f ON p."forum" = f."slug"

@@ -23,9 +23,9 @@ def details(request, id):
 			related = []
 
 		cursor = connection.cursor()
-		try:
-			cursor.execute(SELECT_POST_BY_ID, [id])
-		except IntegrityError:
+		cursor.execute(SELECT_POST_BY_ID, [id])
+
+		if cursor.rowcount == 0:
 			return JsonResponse({}, status = 404)
 
 		response = {}
@@ -34,10 +34,12 @@ def details(request, id):
 		post['created'] = localtime(post['created'])
 		response['post'] = post
 
+		print(related)
+
 		if 'user' in related:
 			cursor.execute(SELECT_USER_BY_NICKNAME, [post['author']])
 			user = dictfetchall(cursor)[0]
-			response['user'] = user
+			response['author'] = user
 		if 'thread' in related:
 			cursor.execute(SELECT_THREAD_BY_ID, [post['thread']])
 			thread = dictfetchall(cursor)[0]
@@ -46,7 +48,6 @@ def details(request, id):
 		if 'forum' in related:
 			cursor.execute(SELECT_FORUM_BY_SLUG, [post['forum']])
 			forum = dictfetchall(cursor)[0]
-			forum['created'] = localtime(forum['created'])
 			response['forum'] = forum
 
 		return JsonResponse(response, status = 200)
@@ -58,9 +59,12 @@ def details(request, id):
 		cursor = connection.cursor()
 
 		cursor.execute(SELECT_POST_BY_ID, [id])
+		if cursor.rowcount == 0:
+			return JsonResponse({}, status = 404)
+		
 		post = dictfetchall(cursor)[0]
 
-		if message:
+		if message and message != post['message']:
 			cursor.execute(POST_UPDATE_MESSAGE, [message, id])
 			post['message'] = message
 			post['isEdited'] = True

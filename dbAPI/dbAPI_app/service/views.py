@@ -17,3 +17,17 @@ def status(request):
 
 	cursor.close()
 	return JsonResponse(response, status = 200)
+
+
+@csrf_exempt
+def clear(request):
+	cursor = connection.cursor()
+	
+	cursor.execute(CLEAR_VOTES)
+	cursor.execute(CLEAR_POSTS)
+	cursor.execute(CLEAR_THREADS)
+	cursor.execute(CLEAR_FORUMS)
+	cursor.execute(CLEAR_USERS)
+
+	cursor.close()
+	return JsonResponse({}, status = 200)

@@ -4,6 +4,7 @@ MAINTAINER Vyacheslav Kruglov
 
 # Обвновление списка пакетов
 RUN apt-get -y update
+RUN apt-get -y upgrade
 
 #
 # Установка postgresql
@@ -11,14 +12,22 @@ RUN apt-get -y update
 ENV PGVER 9.5
 RUN apt-get install -y postgresql-$PGVER
 
-# Run the rest of the commands as the ``postgres`` user created by the ``postgres-$PGVER`` package when it was ``apt-get installed``
+# Установка Python3
+RUN apt-get install -y python3
+RUN apt-get install -y python3-pip
+RUN pip3 install --upgrade pip
+RUN pip3 install pytz
+RUN pip3 install psycopg2
+RUN pip3 install gunicorn
+RUN pip3 install django
+
 USER postgres
 
 # Create a PostgreSQL role named ``docker`` with ``docker`` as the password and
-# then create a database `docker` owned by the ``docker`` role.
+# then create a database `dbapi` owned by the ``docker`` role.
 RUN /etc/init.d/postgresql start &&\
     psql --command "CREATE USER docker WITH SUPERUSER PASSWORD 'docker';" &&\
-    createdb -E UTF8 -T template0 -O docker docker &&\
+    createdb -E UTF8 -T template0 -O docker dbapi &&\
     /etc/init.d/postgresql stop
 
 # Adjust PostgreSQL configuration so that remote connections to the
@@ -37,35 +46,20 @@ VOLUME  ["/etc/postgresql", "/var/log/postgresql", "/var/lib/postgresql"]
 # Back to the root user
 USER root
 
-#
-# Сборка проекта
-#
-
-# Установка Python
-RUN apt-get install -y python
-RUN apt-get install -y django
-RUN apt-get install -y python-pip
-RUN apt-get install -y gunicorn
-RUN pip install pytz
-RUN pip install psycopg2
-
 # Копируем исходный код в Docker-контейнер
 ENV WORK /opt/TechnoparkDB
 ADD dbAPI/ $WORK/dbAPI/
 ADD start.sh $WORK/start.sh
 ADD schema.sql $WORK/schema.sql
 
-# Собираем и устанавливаем пакет
-#WORKDIR $WORK/
-#RUN mvn package
-
 # Объявлем порт сервера
 EXPOSE 5000
-
-# Создаем базу
-RUN $WORK/start.sh
 
 #
 # Запускаем PostgreSQL и сервер
 #
-CMD service postgresql start && gunicorn -b :5000 $WORK/dbAPI/dbAPI.wsgi
+ENV PGPASSWORD docker
+CMD service postgresql start &&\
+	psql -h localhost -U docker -d dbapi -f $WORK/schema.sql &&\ 
+	cd $WORK/dbAPI &&\ 
+	gunicorn -b :5000 dbAPI.wsgi

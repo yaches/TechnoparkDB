@@ -4,7 +4,6 @@ MAINTAINER Vyacheslav Kruglov
 
 # Обвновление списка пакетов
 RUN apt-get -y update
-RUN apt-get -y upgrade
 
 #
 # Установка postgresql

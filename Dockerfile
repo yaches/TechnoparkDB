@@ -49,7 +49,6 @@ USER root
 # Копируем исходный код в Docker-контейнер
 ENV WORK /opt/TechnoparkDB
 ADD dbAPI/ $WORK/dbAPI/
-ADD start.sh $WORK/start.sh
 ADD schema.sql $WORK/schema.sql
 
 # Объявлем порт сервера

@@ -53,7 +53,7 @@ def details(request, id):
 		return JsonResponse(response, status = 200)
 
 	else:
-		params = json.loads(request.body)
+		params = json.loads(request.body.decode("utf-8"))
 		message = params['message'] if 'message' in params else False
 
 		cursor = connection.cursor()

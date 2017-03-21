@@ -9,7 +9,7 @@ from dbAPI_app.queries.users import *
 
 @csrf_exempt
 def create(request, nickname):
-	params = json.loads(request.body)
+	params = json.loads(request.body.decode("utf-8"))
 	params['nickname'] = nickname
 	cursor = connection.cursor()
 
@@ -39,7 +39,7 @@ def profile(request, nickname):
 		cursor.close()
 		return JsonResponse(user, status = 200)
 	else:
-		params = json.loads(request.body)
+		params = json.loads(request.body.decode("utf-8"))
 		params['nickname'] = nickname
 		
 		if not 'email' in params:

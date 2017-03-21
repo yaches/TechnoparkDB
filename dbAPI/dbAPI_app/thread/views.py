@@ -14,7 +14,7 @@ from dbAPI_app.queries.common import *
 @csrf_exempt
 def id_create(request, id, **kwargs):
 	id = int(id)
-	params = json.loads(request.body)
+	params = json.loads(request.body.decode("utf-8"))
 	cursor = connection.cursor()
 
 	if 'thread' in kwargs:
@@ -86,7 +86,7 @@ def slug_create(request, slug):
 
 @csrf_exempt
 def id_vote(request, id):
-	params = json.loads(request.body)
+	params = json.loads(request.body.decode("utf-8"))
 	voice = params['voice']
 	nickname = params['nickname']
 	cursor = connection.cursor()
@@ -148,7 +148,7 @@ def details(request,  query, identifier):
 	thread['created'] = localtime(thread['created'])
 
 	if request.method == 'POST':
-		params = json.loads(request.body)
+		params = json.loads(request.body.decode("utf-8"))
 		message = params['message'] if 'message' in params else thread['message']
 		title = params['title'] if 'title' in params else thread['title']
 

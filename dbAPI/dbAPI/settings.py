@@ -77,7 +77,10 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'dbapi',
-        'USER' : 'postgres'
+        'USER' : 'docker',
+        'PASSWORD': 'docker',
+        'HOST': 'localhost',
+        'PORT': '5432',
     },
 }
 

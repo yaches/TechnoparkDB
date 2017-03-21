@@ -9,7 +9,11 @@ def dictfetchall(cursor):
 
 def localtime(created):
 	zone = pytz.timezone('Europe/Moscow')
-	return created.astimezone(zone)
+	if created.tzinfo is None:
+		created = zone.localize(created)
+	else:
+		created = created.astimezone(zone)
+	return created
 
 def curtime():
 	return localtime(datetime.datetime.now())

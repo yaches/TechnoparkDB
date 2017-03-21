@@ -13,7 +13,7 @@ from dbAPI_app.queries.common import *
 
 @csrf_exempt
 def create(request):
-	params = json.loads(request.body)
+	params = json.loads(request.body.decode("utf-8"))
 	slug = params['slug']
 	title = params['title']
 	user = params['user']
@@ -61,7 +61,7 @@ def details(request, slug):
 
 @csrf_exempt
 def create_thread(request, slug):
-	params = json.loads(request.body)
+	params = json.loads(request.body.decode("utf-8"))
 	author = params['author']
 	message = params['message']
 	title = params['title']

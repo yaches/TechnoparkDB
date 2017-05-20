@@ -1,9 +1,15 @@
 CREATE_POST = u'''
 			INSERT INTO "posts"
-			("message", "author", "forum", "thread", "created", "parent", "isEdited")
-			VALUES (%s, %s, %s, %s, %s, %s, %s)
-			RETURNING "id"
+			( "message", "author", "forum", "thread", "created", "parent", "isEdited")
+			VALUES ( %s, %s, %s, %s, %s, %s, %s)
 		'''
+
+# CREATE_POST = u'''
+# 			INSERT INTO "posts"
+# 			("message", "author", "thread", "created", "parent", "isEdited")
+# 			VALUES (%s, %s, %s, %s, %s, %s)
+# 			RETURNING "id"
+# 		'''
 
 POST_UPDATE_MESSAGE = u'''
 			UPDATE "posts" 
@@ -113,3 +119,8 @@ SELECT_POST_BY_ID = u'''
 			SELECT * FROM "posts" AS p
 			WHERE "id" = %s
 		'''
+
+CHECK_POST_BY_ID = u''' 
+			SELECT "id", "thread" FROM "posts"
+			WHERE "id" = %s
+			'''

@@ -1,71 +1,104 @@
 import json, time, datetime, pytz
 
+import psycopg2
+from psycopg2.extras import *
+
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.db import connection, DatabaseError, IntegrityError
+from django.utils import timezone
 
 from dbAPI_app.helpers.helpers import *
+from dbAPI_app.helpers.db import *
 from dbAPI_app.queries.forums import *
 from dbAPI_app.queries.users import *
 from dbAPI_app.queries.threads import *
 from dbAPI_app.queries.posts import *
 from dbAPI_app.queries.common import *
 
+
+
 @csrf_exempt
 def id_create(request, id, **kwargs):
 	id = int(id)
 	params = json.loads(request.body.decode("utf-8"))
-	cursor = connection.cursor()
+	cursor = connect().cursor()
 
 	if 'thread' in kwargs:
 		thread = kwargs['thread']
 	else:
 		cursor.execute(SELECT_THREAD_BY_ID, [id])
 		if cursor.rowcount == 0:
+			connect().commit()
+			cursor.close();
 			return JsonResponse({}, status = 404)
 		else:
 			thread = dictfetchall(cursor)[0]
 
 	all_created = curtime()
+	adding_posts = len(params)	
 
-	adding_posts = 0
-
+	parents = []
+	values = []
+	counter = 0
+	check_query = 'SELECT "id" FROM "posts" WHERE "thread" = %s AND (' % id
+	
 	for post in params:
-		author = post['author']
-		message = post['message']
-		created = post['created'] if 'created' in post else all_created
-		isEdited = post['isEdited'] if 'isEdited' in post else None
-		parent = post['parent'] if 'parent' in post else None
 
-		if parent is not None:
-			cursor.execute(SELECT_POST_BY_ID, [parent])
-			if cursor.rowcount > 0:
-				parent_post = dictfetchall(cursor)[0]
-				parent_thread = parent_post['thread']
-				if parent_thread != id:
-					cursor.close()
-					return JsonResponse({}, status = 409)
-			else:
-				cursor.close()
-				return JsonResponse({}, status = 409)
+		post_values = []
 
-		try:
-			cursor.execute(CREATE_POST, [
-				message, author, thread['forum'], id, created, parent, isEdited
-			])
-		except IntegrityError:
-			cursor.close()
-			return JsonResponse({}, status = 404)
-
-		adding_posts += 1
-		returning = dictfetchall(cursor)[0]
-		post['id'] = returning['id']
-		post['created'] = created
+		post['created'] = post['created'] if 'created' in post else all_created
 		post['forum'] = thread['forum']
 		post['thread'] = id
+		post['parent'] = post['parent'] if 'parent' in post else None
+		post['isEdited'] = post['isEdited'] if 'isEdited' in post else None
 
-	cursor.execute(INCREASE_FORUM_POSTS, [adding_posts, params[0]['forum']])
+		# cursor.execute('''SELECT NEXTVAL('posts_id_seq')''')
+		# post['id'] = dictfetchall(cursor)[0]['nextval']
+		post['id'] = 42
 
+		# post_values.append(post['id'])
+		post_values.append(post['message'])
+		post_values.append(post['author'])
+		post_values.append(post['forum'])
+		post_values.append(post['thread'])
+		post_values.append(post['created'])
+		post_values.append(post['parent'])
+		post_values.append(post['isEdited'])
+
+		values.append(post_values)
+
+		if post['parent'] is not None:
+			parent = int(post['parent'])
+			if not parent in parents:
+				parents.append(parent)
+				check_query += '"id" = %s OR '
+				counter += 1
+
+	check_query += '0 = 0)'
+	
+	cursor.execute(check_query, parents)
+	if cursor.rowcount < counter:
+		connect().commit()
+		cursor.close()
+		return JsonResponse({}, status = 409)
+
+	formatQuery = postgreQueryFormat(CREATE_POST)
+	if not preparing(formatQuery):
+		cursor.execute("PREPARE posts_insert_plan AS " + formatQuery)
+
+	try:
+		execute_batch(cursor, "EXECUTE posts_insert_plan ( %s, %s, %s, %s, %s, %s, %s)", values)
+	except psycopg2.Error as e:
+		connect().commit()
+		cursor.close()
+		return JsonResponse({}, status = 404)
+
+	cursor.execute(INCREASE_FORUM_POSTS, [adding_posts, thread['forum']])
+
+	print(adding_posts)
+
+	connect().commit()
 	cursor.close()
 	return JsonResponse(params, status = 201, safe = False)
 
@@ -75,6 +108,7 @@ def slug_create(request, slug):
 	cursor = connection.cursor()
 	cursor.execute(SELECT_THREAD_BY_SLUG, [slug])
 	if cursor.rowcount == 0:
+		cursor.close()
 		return JsonResponse({}, status = 404)
 	else:
 		thread = dictfetchall(cursor)[0]
@@ -82,6 +116,83 @@ def slug_create(request, slug):
 
 		cursor.close()
 		return id_create(request, id, thread = thread)
+
+
+# @csrf_exempt
+# def id_create(request, id, **kwargs):
+# 	id = int(id)
+# 	params = json.loads(request.body.decode("utf-8"))
+# 	cursor = connection.cursor()
+
+# 	if 'thread' in kwargs:
+# 		thread = kwargs['thread']
+# 	else:
+# 		cursor.execute(SELECT_THREAD_BY_ID, [id])
+# 		if cursor.rowcount == 0:
+# 			cursor.close();
+# 			return JsonResponse({}, status = 404)
+# 		else:
+# 			thread = dictfetchall(cursor)[0]
+
+# 	all_created = curtime()
+
+# 	adding_posts = 0
+
+# 	print('la')
+
+# 	for post in params:
+# 		author = post['author']
+# 		message = post['message']
+# 		created = post['created'] if 'created' in post else all_created
+# 		isEdited = post['isEdited'] if 'isEdited' in post else None
+# 		parent = post['parent'] if 'parent' in post else None
+
+# 		if parent is not None:
+# 			cursor.execute(CHECK_POST_BY_ID, [parent])
+# 			if cursor.rowcount > 0:
+# 				parent_post = dictfetchall(cursor)[0]
+# 				parent_thread = parent_post['thread']
+# 				if parent_thread != id:
+# 					cursor.close()
+# 					return JsonResponse({}, status = 409)
+# 			else:
+# 				cursor.close()
+# 				return JsonResponse({}, status = 409)
+
+# 		try:
+# 			cursor.execute(CREATE_POST, [
+# 				message, author, thread['forum'], id, created, parent, isEdited
+# 			])
+# 		except IntegrityError:
+# 			cursor.close()
+# 			return JsonResponse({}, status = 404)
+
+# 		adding_posts += 1
+# 		returning = dictfetchall(cursor)[0]
+# 		post['id'] = returning['id']
+# 		post['created'] = created
+# 		post['forum'] = thread['forum']
+# 		post['thread'] = id
+
+# 	cursor.execute(INCREASE_FORUM_POSTS, [adding_posts, params[0]['forum']])
+
+# 	cursor.close()
+# 	return JsonResponse(params, status = 201, safe = False)
+
+
+# @csrf_exempt
+# def slug_create(request, slug):
+# 	cursor = connection.cursor()
+# 	cursor.execute(SELECT_THREAD_BY_SLUG, [slug])
+# 	if cursor.rowcount == 0:
+# 		cursor.close()
+# 		return JsonResponse({}, status = 404)
+# 	else:
+# 		thread = dictfetchall(cursor)[0]
+# 		id = thread['id']
+
+# 		cursor.close()
+# 		return id_create(request, id, thread = thread)
 
 
 @csrf_exempt

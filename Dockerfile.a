@@ -1,0 +1,49 @@
+FROM base/archlinux
+
+MAINTAINER Vyacheslav Kruglov
+
+RUN pacman -Sy
+
+RUN pacman -S postgresql --noconfirm
+RUN pacman -S python --noconfirm
+RUN pacman -S python-pip --noconfirm
+
+RUN pip install pytz
+RUN pip install psycopg2
+
+USER postgres
+
+# Create a PostgreSQL role named ``docker`` with ``docker`` as the password and
+# then create a database `dbapi` owned by the ``docker`` role.
+RUN systemctl start postgresql &&\
+    psql --command "CREATE USER docker WITH SUPERUSER PASSWORD 'docker';" &&\
+    createdb -E UTF8 -T template0 -O docker dbapi &&\
+    systemctl stop postgresql
+
+# Adjust PostgreSQL configuration so that remote connections to the
+# database are possible.
+RUN echo "host all  all    0.0.0.0/0  md5" >> /etc/postgresql/$PGVER/main/pg_hba.conf
+
+# And add ``listen_addresses`` to ``/etc/postgresql/$PGVER/main/postgresql.conf``
+RUN echo "listen_addresses='*'" >> /etc/postgresql/$PGVER/main/postgresql.conf
+
+# Expose the PostgreSQL port
+EXPOSE 5432
+
+# Add VOLUMEs to allow backup of config, logs and databases
+VOLUME  ["/etc/postgresql", "/var/log/postgresql", "/var/lib/postgresql"]
+
+# Back to the root user
+USER root
+
+ENV WORK /opt/TechnoparkDB
+ADD dbAPI/ $WORK/dbAPI/
+ADD start.sh $WORK/start.sh
+ADD schema.sql $WORK/schema.sql
+
+EXPOSE 5000
+
+ENV PGPASSWORD docker
+CMD psql -h localhost -U docker -d dbapi -f $WORK/schema.sql &&\ 
+	cd $WORK/dbAPI &&\ 
+	./manage.py runserver 5000

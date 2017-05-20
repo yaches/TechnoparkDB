@@ -1,9 +1,12 @@
+import psycopg2
+
 from django.http import JsonResponse
 import json
 from django.views.decorators.csrf import csrf_exempt
 from django.db import connection, DatabaseError, IntegrityError
 
 from dbAPI_app.helpers.helpers import *
+from dbAPI_app.helpers.db import *
 from dbAPI_app.queries.users import *
 
 
@@ -11,16 +14,18 @@ from dbAPI_app.queries.users import *
 def create(request, nickname):
 	params = json.loads(request.body.decode("utf-8"))
 	params['nickname'] = nickname
-	cursor = connection.cursor()
+	cursor = connect().cursor()
 
 	cursor.execute(CHECK_USERS_EXIST, [nickname, params['email']])
 	if cursor.rowcount > 0:
 		users = dictfetchall(cursor)
+		connect().commit()
 		cursor.close()
 		return JsonResponse(users, status = 409, safe = False)
 
 	cursor.execute(CREATE_USER, [nickname, params['email'], params['fullname'], params['about']])
 
+	connect().commit()
 	cursor.close()
 	return JsonResponse(params, status = 201)
 

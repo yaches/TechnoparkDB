@@ -1,11 +1,15 @@
 import json
 import time
 import pytz
+
+import psycopg2
+
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.db import connection, DatabaseError, IntegrityError
 
 from dbAPI_app.helpers.helpers import *
+from dbAPI_app.helpers.db import *
 from dbAPI_app.queries.forums import *
 from dbAPI_app.queries.users import *
 from dbAPI_app.queries.threads import *
@@ -20,7 +24,8 @@ def create(request):
 	posts = params['posts'] if 'posts' in params else 0
 	threads = params['threads'] if 'threads' in params else 0
 
-	cursor = connection.cursor()
+	conn = connectFromPool()
+	cursor = conn.cursor()
 
 	cursor.execute(SELECT_USER_BY_NICKNAME, [user])
 	if cursor.rowcount > 0:
@@ -37,7 +42,7 @@ def create(request):
 		cursor.execute(CREATE_FORUM, [
 			slug, title, user, posts, threads
 		])
-	except IntegrityError:
+	except psycopg2.IntegrityError:
 		cursor.close()
 		return JsonResponse({}, status = 404)
 
@@ -47,7 +52,8 @@ def create(request):
 
 @csrf_exempt
 def details(request, slug):
-	cursor = connection.cursor()
+	conn = connectFromPool()
+	cursor = conn.cursor()
 	cursor.execute(SELECT_FORUM_BY_SLUG, [slug])
 	if cursor.rowcount == 0:
 		cursor.close()
@@ -68,7 +74,8 @@ def create_thread(request, slug):
 	created = params['created'] if 'created' in params else curtime()
 	thread_slug = params['slug'] if 'slug' in params else None
 
-	cursor = connection.cursor()
+	conn = connectFromPool()
+	cursor = conn.cursor()
 
 	cursor.execute(SELECT_FORUM_BY_SLUG, [slug])
 	if cursor.rowcount > 0:
@@ -89,7 +96,7 @@ def create_thread(request, slug):
 		cursor.execute(CREATE_THREAD, [
 			title, message, author, slug, created, thread_slug
 		])
-	except IntegrityError:
+	except psycopg2.IntegrityError:
 		cursor.close()
 		return JsonResponse({}, status = 404)
 
@@ -128,7 +135,8 @@ def get_threads(request, slug):
 		query += WITH_LIMIT
 		args.append(limit)
 
-	cursor = connection.cursor()
+	conn = connectFromPool()
+	cursor = conn.cursor()
 	cursor.execute(SELECT_FORUM_BY_SLUG, [slug])
 	if cursor.rowcount == 0:
 		cursor.close()
@@ -169,7 +177,8 @@ def get_users(request, slug):
 		query += WITH_LIMIT
 		args.append(limit)
 
-	cursor = connection.cursor()
+	conn = connectFromPool()
+	cursor = conn.cursor()
 	cursor.execute(SELECT_FORUM_BY_SLUG, [slug])
 	if cursor.rowcount == 0:
 		cursor.close()

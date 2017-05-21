@@ -4,6 +4,11 @@ DROP TABLE IF EXISTS threads;
 DROP TABLE IF EXISTS forums;
 DROP TABLE IF EXISTS users;
 
+DROP INDEX IF EXISTS votes_thread_id_idx;
+DROP INDEX IF EXISTS posts_thread_id_idx;
+DROP INDEX IF EXISTS posts_parent_id_idx;
+DROP INDEX IF EXISTS votes_multi_idx;
+
 CREATE EXTENSION IF NOT EXISTS CITEXT;
 
 CREATE TABLE IF NOT EXISTS "users" (
@@ -38,6 +43,9 @@ CREATE TABLE IF NOT EXISTS "votes" (
 	PRIMARY KEY ("nickname", "thread")
 );
 
+CREATE INDEX IF NOT EXISTS votes_thread_id_idx
+	ON "votes" ("thread");
+
 CREATE TABLE IF NOT EXISTS "posts" (
 	"id" SERIAL PRIMARY KEY,
 	"message" TEXT,
@@ -48,3 +56,12 @@ CREATE TABLE IF NOT EXISTS "posts" (
 	"created" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	"isEdited" BOOLEAN DEFAULT FALSE
 );
+
+CREATE INDEX IF NOT EXISTS posts_thread_id_idx
+	ON "posts" ("thread");
+
+CREATE INDEX IF NOT EXISTS posts_parent_id_idx
+	ON "posts" ("parent");
+
+CREATE INDEX IF NOT EXISTS posts_multi_idx
+	ON "posts" ("thread", "parent", "id");

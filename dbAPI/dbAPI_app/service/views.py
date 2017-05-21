@@ -3,8 +3,6 @@ import time
 import pytz
 
 import psycopg2
-import asyncio
-import asyncpg
 
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -18,8 +16,9 @@ from dbAPI_app.queries.service import *
 
 @csrf_exempt
 def test(request):
-	conn = connect()
+	conn = connectFromPool()
 	cursor = conn.cursor()
+
 	query = u''' 
 		SELECT * FROM "lalala"
 	'''
@@ -35,7 +34,9 @@ def test(request):
 
 @csrf_exempt
 def status(request):
-	cursor = connection.cursor()
+	conn = connectFromPool()
+	cursor = conn.cursor()
+
 	cursor.execute(SELECT_DATA_AMOUNT)
 	response = dictfetchall(cursor)[0]
 
@@ -45,7 +46,9 @@ def status(request):
 
 @csrf_exempt
 def clear(request):
-	cursor = connection.cursor()
+	conn = connectFromPool()
+	cursor = conn.cursor()
+
 	
 	# cursor.execute(CLEAR_VOTES)
 	# cursor.execute(CLEAR_POSTS)

@@ -14,25 +14,26 @@ from dbAPI_app.queries.users import *
 def create(request, nickname):
 	params = json.loads(request.body.decode("utf-8"))
 	params['nickname'] = nickname
-	cursor = connect().cursor()
+	conn = connectFromPool()
+	cursor = conn.cursor()
 
 	cursor.execute(CHECK_USERS_EXIST, [nickname, params['email']])
 	if cursor.rowcount > 0:
 		users = dictfetchall(cursor)
-		connect().commit()
 		cursor.close()
 		return JsonResponse(users, status = 409, safe = False)
 
 	cursor.execute(CREATE_USER, [nickname, params['email'], params['fullname'], params['about']])
 
-	connect().commit()
 	cursor.close()
 	return JsonResponse(params, status = 201)
 
 
 @csrf_exempt
 def profile(request, nickname):
-	cursor = connection.cursor()
+	conn = connectFromPool()
+	cursor = conn.cursor()
+
 	cursor.execute(SELECT_USER_BY_NICKNAME, [nickname])
 	if cursor.rowcount == 0:
 		cursor.close()
@@ -60,7 +61,7 @@ def profile(request, nickname):
 			cursor.execute(UPDATE_USER, [
 				params['email'], params['fullname'], params['about'], nickname
 			])
-		except IntegrityError:
+		except psycopg2.IntegrityError:
 			cursor.close()
 			return JsonResponse({}, status = 409)
 

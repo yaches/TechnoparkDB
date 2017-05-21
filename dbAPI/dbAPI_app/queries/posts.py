@@ -1,15 +1,8 @@
 CREATE_POST = u'''
 			INSERT INTO "posts"
-			( "message", "author", "forum", "thread", "created", "parent", "isEdited")
-			VALUES ( %s, %s, %s, %s, %s, %s, %s)
+			("id", "message", "author", "forum", "thread", "created", "parent", "isEdited")
+			VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
 		'''
-
-# CREATE_POST = u'''
-# 			INSERT INTO "posts"
-# 			("message", "author", "thread", "created", "parent", "isEdited")
-# 			VALUES (%s, %s, %s, %s, %s, %s)
-# 			RETURNING "id"
-# 		'''
 
 POST_UPDATE_MESSAGE = u'''
 			UPDATE "posts" 

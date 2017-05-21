@@ -17,23 +17,28 @@ from dbAPI_app.queries.posts import *
 from dbAPI_app.queries.common import *
 
 
-
 @csrf_exempt
 def id_create(request, id, **kwargs):
-	id = int(id)
 	params = json.loads(request.body.decode("utf-8"))
-	cursor = connect().cursor()
+	conn = connectFromPool()
+	cursor = conn.cursor()
 
-	if 'thread' in kwargs:
-		thread = kwargs['thread']
+	try:
+		id = int(id)
+	except:
+		pass
+
+	if type(id) == int:
+		cursor.execute(CHECK_THREAD_BY_ID, [id])
 	else:
-		cursor.execute(SELECT_THREAD_BY_ID, [id])
-		if cursor.rowcount == 0:
-			connect().commit()
-			cursor.close();
-			return JsonResponse({}, status = 404)
-		else:
-			thread = dictfetchall(cursor)[0]
+		cursor.execute(CHECK_THREAD_BY_SLUG, [id])
+
+	if cursor.rowcount == 0:
+		cursor.close();
+		return JsonResponse({}, status = 404)
+	else:
+		thread = dictfetchall(cursor)[0]
+		id = thread['id']
 
 	all_created = curtime()
 	adding_posts = len(params)	
@@ -53,11 +58,10 @@ def id_create(request, id, **kwargs):
 		post['parent'] = post['parent'] if 'parent' in post else None
 		post['isEdited'] = post['isEdited'] if 'isEdited' in post else None
 
-		# cursor.execute('''SELECT NEXTVAL('posts_id_seq')''')
-		# post['id'] = dictfetchall(cursor)[0]['nextval']
-		post['id'] = 42
+		cursor.execute('''SELECT NEXTVAL('posts_id_seq')''')
+		post['id'] = dictfetchall(cursor)[0]['nextval']
 
-		# post_values.append(post['id'])
+		post_values.append(post['id'])
 		post_values.append(post['message'])
 		post_values.append(post['author'])
 		post_values.append(post['forum'])
@@ -79,7 +83,6 @@ def id_create(request, id, **kwargs):
 	
 	cursor.execute(check_query, parents)
 	if cursor.rowcount < counter:
-		connect().commit()
 		cursor.close()
 		return JsonResponse({}, status = 409)
 
@@ -88,9 +91,9 @@ def id_create(request, id, **kwargs):
 		cursor.execute("PREPARE posts_insert_plan AS " + formatQuery)
 
 	try:
-		execute_batch(cursor, "EXECUTE posts_insert_plan ( %s, %s, %s, %s, %s, %s, %s)", values)
+		execute_batch(cursor, "EXECUTE posts_insert_plan (%s, %s, %s, %s, %s, %s, %s, %s)", values)
 	except psycopg2.Error as e:
-		connect().commit()
+		print(e)
 		cursor.close()
 		return JsonResponse({}, status = 404)
 
@@ -98,101 +101,13 @@ def id_create(request, id, **kwargs):
 
 	print(adding_posts)
 
-	connect().commit()
 	cursor.close()
 	return JsonResponse(params, status = 201, safe = False)
 
 
 @csrf_exempt
 def slug_create(request, slug):
-	cursor = connection.cursor()
-	cursor.execute(SELECT_THREAD_BY_SLUG, [slug])
-	if cursor.rowcount == 0:
-		cursor.close()
-		return JsonResponse({}, status = 404)
-	else:
-		thread = dictfetchall(cursor)[0]
-		id = thread['id']
-
-		cursor.close()
-		return id_create(request, id, thread = thread)
-
-
-# @csrf_exempt
-# def id_create(request, id, **kwargs):
-# 	id = int(id)
-# 	params = json.loads(request.body.decode("utf-8"))
-# 	cursor = connection.cursor()
-
-# 	if 'thread' in kwargs:
-# 		thread = kwargs['thread']
-# 	else:
-# 		cursor.execute(SELECT_THREAD_BY_ID, [id])
-# 		if cursor.rowcount == 0:
-# 			cursor.close();
-# 			return JsonResponse({}, status = 404)
-# 		else:
-# 			thread = dictfetchall(cursor)[0]
-
-# 	all_created = curtime()
-
-# 	adding_posts = 0
-
-# 	print('la')
-
-# 	for post in params:
-# 		author = post['author']
-# 		message = post['message']
-# 		created = post['created'] if 'created' in post else all_created
-# 		isEdited = post['isEdited'] if 'isEdited' in post else None
-# 		parent = post['parent'] if 'parent' in post else None
-
-# 		if parent is not None:
-# 			cursor.execute(CHECK_POST_BY_ID, [parent])
-# 			if cursor.rowcount > 0:
-# 				parent_post = dictfetchall(cursor)[0]
-# 				parent_thread = parent_post['thread']
-# 				if parent_thread != id:
-# 					cursor.close()
-# 					return JsonResponse({}, status = 409)
-# 			else:
-# 				cursor.close()
-# 				return JsonResponse({}, status = 409)
-
-# 		try:
-# 			cursor.execute(CREATE_POST, [
-# 				message, author, thread['forum'], id, created, parent, isEdited
-# 			])
-# 		except IntegrityError:
-# 			cursor.close()
-# 			return JsonResponse({}, status = 404)
-
-# 		adding_posts += 1
-# 		returning = dictfetchall(cursor)[0]
-# 		post['id'] = returning['id']
-# 		post['created'] = created
-# 		post['forum'] = thread['forum']
-# 		post['thread'] = id
-
-# 	cursor.execute(INCREASE_FORUM_POSTS, [adding_posts, params[0]['forum']])
-
-# 	cursor.close()
-# 	return JsonResponse(params, status = 201, safe = False)
-
-
-# @csrf_exempt
-# def slug_create(request, slug):
-# 	cursor = connection.cursor()
-# 	cursor.execute(SELECT_THREAD_BY_SLUG, [slug])
-# 	if cursor.rowcount == 0:
-# 		cursor.close()
-# 		return JsonResponse({}, status = 404)
-# 	else:
-# 		thread = dictfetchall(cursor)[0]
-# 		id = thread['id']
-
-# 		cursor.close()
-# 		return id_create(request, id, thread = thread)
+	return id_create(request, slug)
 
 
 @csrf_exempt
@@ -200,7 +115,8 @@ def id_vote(request, id):
 	params = json.loads(request.body.decode("utf-8"))
 	voice = params['voice']
 	nickname = params['nickname']
-	cursor = connection.cursor()
+	conn = connectFromPool()
+	cursor = conn.cursor()
 
 	cursor.execute(SELECT_VOTE, [nickname, id])
 	if cursor.rowcount > 0:
@@ -212,7 +128,7 @@ def id_vote(request, id):
 	else:
 		try:
 			cursor.execute(CREATE_VOTE, [nickname, id, voice])
-		except IntegrityError:
+		except psycopg2.IntegrityError:
 			cursor.close()
 			return JsonResponse({}, status = 404)
 
@@ -226,7 +142,8 @@ def id_vote(request, id):
 
 @csrf_exempt
 def slug_vote(request, slug):
-	cursor = connection.cursor()
+	conn = connectFromPool()
+	cursor = conn.cursor()
 	cursor.execute(SELECT_THREAD_BY_SLUG, [slug])
 	if cursor.rowcount > 0:
 		thread = dictfetchall(cursor)[0]
@@ -249,7 +166,8 @@ def slug_details(request, slug):
 
 @csrf_exempt
 def details(request,  query, identifier):
-	cursor = connection.cursor()
+	conn = connectFromPool()
+	cursor = conn.cursor()
 	cursor.execute(query, [identifier])
 	if cursor.rowcount == 0:
 		cursor.close()
@@ -352,7 +270,8 @@ def posts(request, check_query, query, identifier):
 		query += WITH_OFFSET
 		args.append(page)
 
-	cursor = connection.cursor()
+	conn = connectFromPool()
+	cursor = conn.cursor()
 	cursor.execute(check_query, [identifier])
 	if cursor.rowcount == 0:
 		cursor.close()
@@ -369,16 +288,17 @@ def posts(request, check_query, query, identifier):
 	else:
 		page += cursor.rowcount
 
+	new_marker = marking(page)
+
 	if cursor.rowcount == 0:
 		page = 0
-
-	marking('marker', page)
+		new_marker = marker
 
 	all_posts = dictfetchall(cursor)
 	for post in all_posts:
 		post['created'] = localtime(post['created'])
 
-	response = {'marker': 'marker', 'posts': all_posts}
+	response = {'marker': new_marker, 'posts': all_posts}
 
 	cursor.close()
 	return JsonResponse(response, status = 200)

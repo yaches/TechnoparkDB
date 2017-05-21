@@ -1,4 +1,10 @@
 import time, datetime, pytz
+import string
+import random
+
+
+def random_string(size=10, chars=string.ascii_uppercase + string.digits):
+	return ''.join(random.choice(chars) for _ in range(size))
 
 def dictfetchall(cursor):
 	columns = [col[0] for col in cursor.description]
@@ -15,15 +21,20 @@ def localtime(created):
 		created = created.astimezone(zone)
 	return created
 
+
 def curtime():
 	return localtime(datetime.datetime.now())
 
-def marking(name, page):
+
+def marking(page):
+	name = random_string()
 	try:
 		marking.m[name] = page
 	except:
 		marking.m = {}
 		marking.m[name] = page
+	finally:
+		return name
 		
 
 def postgreQueryFormat(query):

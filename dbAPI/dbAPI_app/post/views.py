@@ -1,11 +1,13 @@
 import json
 import time
 import pytz
+import psycopg2
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.db import connection, DatabaseError, IntegrityError
 
 from dbAPI_app.helpers.helpers import *
+from dbAPI_app.helpers.db import *
 from dbAPI_app.queries.forums import *
 from dbAPI_app.queries.users import *
 from dbAPI_app.queries.threads import *
@@ -22,7 +24,8 @@ def details(request, id):
 		else:
 			related = []
 
-		cursor = connection.cursor()
+		conn = connectFromPool()
+		cursor = conn.cursor()
 		cursor.execute(SELECT_POST_BY_ID, [id])
 
 		if cursor.rowcount == 0:
@@ -56,7 +59,8 @@ def details(request, id):
 		params = json.loads(request.body.decode("utf-8"))
 		message = params['message'] if 'message' in params else False
 
-		cursor = connection.cursor()
+		conn = connectFromPool()
+		cursor = conn.cursor()
 
 		cursor.execute(SELECT_POST_BY_ID, [id])
 		if cursor.rowcount == 0:

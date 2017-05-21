@@ -26,17 +26,15 @@ SELECT_THREAD_BY_ID = u'''
 			GROUP BY "id"
 		'''
 
-# SELECT_THREAD_BY_SLUG = u'''
-# 			SELECT * FROM "threads"
-# 			WHERE "slug" = %s
-# 			GROUP BY "id"
-# 		'''
+CHECK_THREAD_BY_SLUG = u'''
+			SELECT id, forum FROM "threads"
+			WHERE "slug" = %s
+		'''
 
-# SELECT_THREAD_BY_ID = u'''
-# 			SELECT * FROM "threads"
-# 			WHERE "id" = %s
-# 			GROUP BY "id"
-# 		'''
+CHECK_THREAD_BY_ID = u'''
+			SELECT id, forum FROM "threads"
+			WHERE "id" = %s
+		'''
 
 SELECT_THREADS_BY_FORUM = u'''
 			SELECT "threads".*, SUM("voice") AS "votes" FROM "threads"

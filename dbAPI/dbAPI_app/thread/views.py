@@ -87,8 +87,8 @@ def id_create(request, id, **kwargs):
 		return JsonResponse({}, status = 409)
 
 	formatQuery = postgreQueryFormat(CREATE_POST)
-	if not preparing(formatQuery):
-		cursor.execute("PREPARE posts_insert_plan AS " + formatQuery)
+	# if not preparing(formatQuery):
+	cursor.execute("PREPARE posts_insert_plan AS " + formatQuery)
 
 	try:
 		execute_batch(cursor, "EXECUTE posts_insert_plan (%s, %s, %s, %s, %s, %s, %s, %s)", values)
@@ -118,19 +118,11 @@ def id_vote(request, id):
 	conn = connectFromPool()
 	cursor = conn.cursor()
 
-	cursor.execute(SELECT_VOTE, [nickname, id])
-	if cursor.rowcount > 0:
-		try:
-			cursor.execute(UPDATE_VOTE, [voice, nickname, id])
-		except:
-			cursor.close()
-			return JsonResponse({}, status = 404)
-	else:
-		try:
-			cursor.execute(CREATE_VOTE, [nickname, id, voice])
-		except psycopg2.IntegrityError:
-			cursor.close()
-			return JsonResponse({}, status = 404)
+	try:
+		cursor.execute('SELECT update_or_insert_votes(CAST(%s AS CITEXT), %s, %s)', [nickname, id, voice])
+	except psycopg2.Error:
+		cursor.close()
+		return JsonResponse({}, status = 404)
 
 	cursor.execute(SELECT_THREAD_BY_ID, [id])
 	thread = dictfetchall(cursor)[0]

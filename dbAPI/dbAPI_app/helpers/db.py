@@ -14,7 +14,7 @@ def connectFromPool():
 	try:
 		conn = connectFromPool.pool.getconn()
 	except:
-		connectFromPool.pool = psycopg2.pool.PersistentConnectionPool(1, 10, dbname='dbapi', user='postgres')
+		connectFromPool.pool = psycopg2.pool.ThreadedConnectionPool(1, 10, dbname='dbapi', user='postgres')
 		# connectFromPool.pool = psycopg2.pool.PersistentConnectionPool(1, 10, dbname='dbapi', user='docker', password='docker', host='localhost', port='5432')
 		conn = connectFromPool.pool.getconn()
 	finally:

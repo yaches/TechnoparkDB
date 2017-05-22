@@ -159,7 +159,7 @@ def get_users(request, slug):
 	desc = request.GET.get('desc', False)
 	desc = True if desc == 'true' else False
 
-	args = [slug, slug]
+	args = [slug]
 
 	if since:
 		args.append(since)

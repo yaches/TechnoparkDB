@@ -5,7 +5,6 @@ CREATE_FORUM = u'''
 			("slug", "title", "user", "posts", "threads")
 			VALUES
 			(%s, %s, (SELECT "nickname" FROM "users" WHERE "nickname" = %s), %s, %s)
-			RETURNING "user"
 		'''
 
 SELECT_FORUM_BY_SLUG = u''' 

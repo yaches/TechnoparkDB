@@ -88,7 +88,10 @@ def id_create(request, id, **kwargs):
 
 	formatQuery = postgreQueryFormat(CREATE_POST)
 	# if not preparing(formatQuery):
-	cursor.execute("PREPARE posts_insert_plan AS " + formatQuery)
+	try:
+		cursor.execute("PREPARE posts_insert_plan AS " + formatQuery)
+	except psycopg2.Error as e:
+		pass
 
 	try:
 		execute_batch(cursor, "EXECUTE posts_insert_plan (%s, %s, %s, %s, %s, %s, %s, %s)", values)

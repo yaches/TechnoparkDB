@@ -98,7 +98,7 @@ def create_thread(request, slug):
 		])
 	except psycopg2.Error as e:
 		# print(e)
-		print(e.pgcode)
+		# print(e.pgcode)
 		cursor.close()
 		return JsonResponse({}, status = 404)
 

@@ -37,7 +37,7 @@ def details(request, id):
 		post['created'] = localtime(post['created'])
 		response['post'] = post
 
-		print(related)
+		# print(related)
 
 		if 'user' in related:
 			cursor.execute(SELECT_USER_BY_NICKNAME, [post['author']])

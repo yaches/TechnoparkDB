@@ -109,4 +109,5 @@ ADD_FORUM_USER = u'''
 			INSERT INTO "forum_users"
 			("nickname", "forum") 
 			VALUES (%s, %s)
+			ON CONFLICT DO NOTHING
 '''

@@ -98,7 +98,7 @@ def id_create(request, id, **kwargs):
 	try:
 		execute_batch(cursor, "EXECUTE posts_insert_plan (%s, %s, %s, %s, %s, %s, %s, %s)", values)
 	except psycopg2.Error as e:
-		print(e.pgcode)
+		# print(e.pgcode)
 		cursor.close()
 		return JsonResponse({}, status = 404)
 
@@ -118,7 +118,8 @@ def id_create(request, id, **kwargs):
 	try:
 		execute_batch(cursor, "EXECUTE forum_users_insert_plan (%s, %s)", author_nicknames_values)
 	except psycopg2.Error as e:
-		print(e.pgcode)
+		# print(e.pgcode)
+		pass
 
 	cursor.close()
 	return JsonResponse(params, status = 201, safe = False)
@@ -141,7 +142,7 @@ def id_vote(request, id):
 		cursor.execute('SELECT update_or_insert_votes(CAST(%s AS CITEXT), %s, %s)', [nickname, id, voice])
 	except psycopg2.Error as e:
 		# print(e)
-		print(e.pgcode)
+		# print(e.pgcode)
 		cursor.close()
 		return JsonResponse({}, status = 404)
 

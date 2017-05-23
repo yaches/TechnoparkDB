@@ -97,6 +97,7 @@ def create_thread(request, slug):
 			title, message, author, slug, created, thread_slug
 		])
 	except psycopg2.Error as e:
+		# print(e)
 		print(e.pgcode)
 		cursor.close()
 		return JsonResponse({}, status = 404)
@@ -109,7 +110,9 @@ def create_thread(request, slug):
 
 	try:
 		cursor.execute(ADD_FORUM_USER, [author, slug])
-	except psycopg2.Error:
+	except psycopg2.Error as e:
+		# print(e)
+		# print(e.pgcode)
 		pass
 
 	cursor.close()
@@ -192,6 +195,8 @@ def get_users(request, slug):
 
 	cursor.execute(query, args)
 	users = dictfetchall(cursor)
+
+	# print(users)
 	
 	cursor.close()
 	return JsonResponse(users, status = 200, safe = False)

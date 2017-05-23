@@ -29,47 +29,79 @@ UPDATE_USER = u'''
 			WHERE "nickname" = %s
 		'''
 
+# SELECT_USERS_BY_FORUM_WHERE = u''' 
+# 			SELECT u."about", u."email", u."fullname", u."nickname" 
+# 			FROM "users" AS u 
+# 			WHERE u."nickname" IN (
+# 				SELECT "nickname"
+# 				FROM "forum_users"
+# 				WHERE "forum" = %s
+# 			) AND u."nickname" > %s
+# 			ORDER BY u."nickname"
+# '''
+
+# SELECT_USERS_BY_FORUM_WHERE_DESC = u''' 
+# 			SELECT u."about", u."email", u."fullname", u."nickname" 
+# 			FROM "users" AS u 
+# 			WHERE u."nickname" IN (
+# 				SELECT "nickname"
+# 				FROM "forum_users"
+# 				WHERE "forum" = %s
+# 			) AND u."nickname" < %s
+# 			ORDER BY u."nickname" DESC
+# '''
+
+# SELECT_USERS_BY_FORUM = u''' 
+# 			SELECT u."about", u."email", u."fullname", u."nickname" 
+# 			FROM "users" AS u 
+# 			WHERE u."nickname" IN (
+# 				SELECT "nickname"
+# 				FROM "forum_users"
+# 				WHERE "forum" = %s
+# 			)
+# 			ORDER BY u."nickname"
+# '''
+
+# SELECT_USERS_BY_FORUM_DESC = u''' 
+# 			SELECT u."about", u."email", u."fullname", u."nickname" 
+# 			FROM "users" AS u 
+# 			WHERE u."nickname" IN (
+# 				SELECT "nickname"
+# 				FROM "forum_users"
+# 				WHERE "forum" = %s
+# 			)
+# 			ORDER BY u."nickname" DESC
+# '''
+
 SELECT_USERS_BY_FORUM_WHERE = u''' 
-			SELECT u."about", u."email", u."fullname", u."nickname" 
-			FROM "users" AS u 
-			WHERE u."nickname" IN (
-				SELECT "nickname"
-				FROM "forum_users"
-				WHERE "forum" = %s
-			) AND u."nickname" > %s
+			SELECT u."nickname", "email", "fullname", "about" 
+			FROM "forum_users" AS fu
+			JOIN "users" AS u ON u."nickname" = fu."nickname"
+			WHERE "forum" = %s AND u."nickname" > %s
 			ORDER BY u."nickname"
 '''
 
 SELECT_USERS_BY_FORUM_WHERE_DESC = u''' 
-			SELECT u."about", u."email", u."fullname", u."nickname" 
-			FROM "users" AS u 
-			WHERE u."nickname" IN (
-				SELECT "nickname"
-				FROM "forum_users"
-				WHERE "forum" = %s
-			) AND u."nickname" < %s
+			SELECT u."nickname", "email", "fullname", "about" 
+			FROM "forum_users" AS fu
+			JOIN "users" AS u ON u."nickname" = fu."nickname"
+			WHERE "forum" = %s AND u."nickname" < %s
 			ORDER BY u."nickname" DESC
 '''
 
 SELECT_USERS_BY_FORUM = u''' 
-			SELECT u."about", u."email", u."fullname", u."nickname" 
-			FROM "users" AS u 
-			WHERE u."nickname" IN (
-				SELECT "nickname"
-				FROM "forum_users"
-				WHERE "forum" = %s
-			)
+			SELECT u."nickname", "email", "fullname", "about" 
+			FROM "forum_users" AS fu
+			JOIN "users" AS u ON u."nickname" = fu."nickname"
+			WHERE "forum" = %s
 			ORDER BY u."nickname"
 '''
 
 SELECT_USERS_BY_FORUM_DESC = u''' 
-			SELECT u."about", u."email", u."fullname", u."nickname" 
-			FROM "users" AS u 
-			WHERE u."nickname" IN (
-				SELECT "nickname"
-				FROM "forum_users"
-				WHERE "forum" = %s
-			)
+			SELECT u."nickname", "email", "fullname", "about" 
+			FROM "forum_users" AS fu
+			JOIN "users" AS u ON u."nickname" = fu."nickname"
+			WHERE "forum" = %s
 			ORDER BY u."nickname" DESC
 '''
 

@@ -90,7 +90,6 @@ def id_create(request, id, **kwargs):
 		return JsonResponse({}, status = 409)
 
 	formatQuery = postgreQueryFormat(CREATE_POST)
-	# if not preparing(formatQuery):
 	try:
 		cursor.execute("PREPARE posts_insert_plan AS " + formatQuery)
 	except psycopg2.Error as e:
@@ -114,14 +113,12 @@ def id_create(request, id, **kwargs):
 	try:
 		cursor.execute("PREPARE forum_users_insert_plan AS " + postgreQueryFormat(ADD_FORUM_USER))
 	except psycopg2.Error as e:
-		pass 
+		pass
 
 	try:
 		execute_batch(cursor, "EXECUTE forum_users_insert_plan (%s, %s)", author_nicknames_values)
 	except psycopg2.Error as e:
-		pass
-
-	# print(adding_posts)
+		print(e.pgcode)
 
 	cursor.close()
 	return JsonResponse(params, status = 201, safe = False)
@@ -142,7 +139,9 @@ def id_vote(request, id):
 
 	try:
 		cursor.execute('SELECT update_or_insert_votes(CAST(%s AS CITEXT), %s, %s)', [nickname, id, voice])
-	except psycopg2.Error:
+	except psycopg2.Error as e:
+		# print(e)
+		print(e.pgcode)
 		cursor.close()
 		return JsonResponse({}, status = 404)
 

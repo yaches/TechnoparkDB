@@ -45,6 +45,7 @@ def id_create(request, id, **kwargs):
 
 	parents = []
 	values = []
+	author_nicknames = set()
 	counter = 0
 	check_query = 'SELECT "id" FROM "posts" WHERE "thread" = %s AND (' % id
 	
@@ -69,6 +70,8 @@ def id_create(request, id, **kwargs):
 		post_values.append(post['created'])
 		post_values.append(post['parent'])
 		post_values.append(post['isEdited'])
+
+		author_nicknames.add(post['author'])
 
 		values.append(post_values)
 
@@ -96,13 +99,29 @@ def id_create(request, id, **kwargs):
 	try:
 		execute_batch(cursor, "EXECUTE posts_insert_plan (%s, %s, %s, %s, %s, %s, %s, %s)", values)
 	except psycopg2.Error as e:
-		print(e)
+		print(e.pgcode)
 		cursor.close()
 		return JsonResponse({}, status = 404)
 
 	cursor.execute(INCREASE_FORUM_POSTS, [adding_posts, thread['forum']])
 
-	print(adding_posts)
+	author_nicknames = list(author_nicknames)
+	author_nicknames.sort()
+	author_nicknames_values = []
+	for author in author_nicknames:
+		author_nicknames_values.append([author, thread['forum']])
+
+	try:
+		cursor.execute("PREPARE forum_users_insert_plan AS " + postgreQueryFormat(ADD_FORUM_USER))
+	except psycopg2.Error as e:
+		pass 
+
+	try:
+		execute_batch(cursor, "EXECUTE forum_users_insert_plan (%s, %s)", author_nicknames_values)
+	except psycopg2.Error as e:
+		pass
+
+	# print(adding_posts)
 
 	cursor.close()
 	return JsonResponse(params, status = 201, safe = False)

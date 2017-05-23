@@ -60,4 +60,4 @@ ENV PGPASSWORD docker
 CMD service postgresql start &&\
 	psql -h localhost -U docker -d dbapi -f $WORK/schema.sql &&\ 
 	cd $WORK/dbAPI &&\ 
-	gunicorn -b :5000 dbAPI.wsgi
+	gunicorn -b :5000 -k gthread --threads 10 dbAPI.wsgi

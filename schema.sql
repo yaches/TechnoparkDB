@@ -96,7 +96,7 @@ CREATE INDEX IF NOT EXISTS posts_parent_idx
 	ON "posts" ("parent");
 
 CREATE INDEX IF NOT EXISTS posts_multi_idx
-	ON "posts" ("thread", "parent", "id");
+	ON "posts" ("thread", "id", "parent");
 
 
 CREATE TABLE IF NOT EXISTS "forum_users" (
@@ -110,28 +110,6 @@ CREATE INDEX IF NOT EXISTS forum_users_user_idx
 
 CREATE INDEX IF NOT EXISTS forum_users_forum_idx
 	ON "forum_users" ("forum");
-
-
-CREATE OR REPLACE FUNCTION on_insert_post_or_thread()
-RETURNS TRIGGER AS '
-	BEGIN
-		IF NOT EXISTS(
-			SELECT * FROM "forum_users"
-			WHERE "forum" = NEW.forum AND "nickname" = NEW.author)
-		THEN
-			INSERT INTO forum_users (nickname, forum) VALUES (NEW.author, NEW.forum);
-		END IF;
-		RETURN NEW;
-	END;
-' LANGUAGE plpgsql;
-
-CREATE TRIGGER post_insert_trigger
-AFTER INSERT ON "posts"
-FOR EACH ROW EXECUTE PROCEDURE on_insert_post_or_thread();
-
-CREATE TRIGGER thread_insert_trigger
-AFTER INSERT ON "threads"
-FOR EACH ROW EXECUTE PROCEDURE on_insert_post_or_thread();
 
 
 CREATE OR REPLACE FUNCTION update_or_insert_votes(u CITEXT, t_id INTEGER, v INTEGER)

@@ -96,7 +96,8 @@ def create_thread(request, slug):
 		cursor.execute(CREATE_THREAD, [
 			title, message, author, slug, created, thread_slug
 		])
-	except psycopg2.IntegrityError:
+	except psycopg2.Error as e:
+		print(e.pgcode)
 		cursor.close()
 		return JsonResponse({}, status = 404)
 
@@ -105,6 +106,11 @@ def create_thread(request, slug):
 	params['forum'] = slug
 
 	cursor.execute(INCREASE_FORUM_THREADS, [1, slug])
+
+	try:
+		cursor.execute(ADD_FORUM_USER, [author, slug])
+	except psycopg2.Error:
+		pass
 
 	cursor.close()
 	return JsonResponse(params, status = 201)

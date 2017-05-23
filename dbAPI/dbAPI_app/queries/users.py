@@ -72,3 +72,9 @@ SELECT_USERS_BY_FORUM_DESC = u'''
 			)
 			ORDER BY u."nickname" DESC
 '''
+
+ADD_FORUM_USER = u''' 
+			INSERT INTO "forum_users"
+			("nickname", "forum") 
+			VALUES (%s, %s)
+'''

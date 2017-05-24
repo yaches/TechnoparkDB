@@ -29,6 +29,7 @@ def details(request, id):
 		cursor.execute(SELECT_POST_BY_ID, [id])
 
 		if cursor.rowcount == 0:
+			cursor.close()
 			return JsonResponse({}, status = 404)
 
 		response = {}
@@ -53,6 +54,7 @@ def details(request, id):
 			forum = dictfetchall(cursor)[0]
 			response['forum'] = forum
 
+		cursor.close()
 		return JsonResponse(response, status = 200)
 
 	else:
@@ -64,6 +66,7 @@ def details(request, id):
 
 		cursor.execute(SELECT_POST_BY_ID, [id])
 		if cursor.rowcount == 0:
+			cursor.close()
 			return JsonResponse({}, status = 404)
 		
 		post = dictfetchall(cursor)[0]
@@ -75,4 +78,5 @@ def details(request, id):
 
 		post['created'] = localtime(post['created'])
 
+		cursor.close()
 		return JsonResponse(post, status = 200)

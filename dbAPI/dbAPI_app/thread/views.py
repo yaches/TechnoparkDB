@@ -77,21 +77,22 @@ def id_create(request, id, **kwargs):
 
 		post_values = []
 
-		post['created'] = post['created'] if 'created' in post else all_created
 		post['forum'] = thread['forum']
-		post['thread'] = id
-		post['isEdited'] = post['isEdited'] if 'isEdited' in post else None
 
 		cursor.execute('''SELECT NEXTVAL('posts_id_seq')''')
 		post['id'] = dictfetchall(cursor)[0]['nextval']
 
 		if 'parent' in post:
 			post['parent'] = int(post['parent'])
-			post['path'] = parent_dict[post['parent']].copy()
-			post['path'].append(post['id'])
+			path = parent_dict[post['parent']].copy()
+			path.append(post['id'])
 		else:
 			post['parent'] = None
-			post['path'] = [post['id']]
+			path = [post['id']]
+
+		post['isEdited'] = post['isEdited'] if 'isEdited' in post else None
+		post['created'] = post['created'] if 'created' in post else all_created
+		post['thread'] = id
 
 		post_values.append(post['id'])
 		post_values.append(post['message'])
@@ -101,7 +102,7 @@ def id_create(request, id, **kwargs):
 		post_values.append(post['created'])
 		post_values.append(post['parent'])
 		post_values.append(post['isEdited'])
-		post_values.append(post['path'])
+		post_values.append(path)
 
 		author_nicknames.add(post['author'])
 

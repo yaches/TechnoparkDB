@@ -17,6 +17,8 @@ from dbAPI_app.queries.posts import *
 
 @csrf_exempt
 def details(request, id):
+	# print(request.path)
+	
 	if request.method == 'GET':
 		related = request.GET.get('related', False)
 		if related:

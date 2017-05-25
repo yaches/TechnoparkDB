@@ -12,6 +12,8 @@ from dbAPI_app.queries.users import *
 
 @csrf_exempt
 def create(request, nickname):
+	# print(request.path)
+
 	params = json.loads(request.body.decode("utf-8"))
 	params['nickname'] = nickname
 	conn = connectFromPool()
@@ -31,6 +33,8 @@ def create(request, nickname):
 
 @csrf_exempt
 def profile(request, nickname):
+	# print(request.path)
+	
 	conn = connectFromPool()
 	cursor = conn.cursor()
 

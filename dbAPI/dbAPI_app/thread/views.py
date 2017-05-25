@@ -19,6 +19,9 @@ from dbAPI_app.queries.common import *
 
 @csrf_exempt
 def id_create(request, id, **kwargs):
+
+	# print(request.path)
+
 	params = json.loads(request.body.decode("utf-8"))
 	conn = connectFromPool()
 	cursor = conn.cursor()
@@ -47,35 +50,10 @@ def id_create(request, id, **kwargs):
 	values = []
 	author_nicknames = set()
 	counter = 0
-	check_query = 'SELECT "id" FROM "posts" WHERE "thread" = %s AND (' % id
-	
+	check_query = 'SELECT "id", "path" FROM "posts" WHERE "thread" = %s AND (' % id
+
 	for post in params:
-
-		post_values = []
-
-		post['created'] = post['created'] if 'created' in post else all_created
-		post['forum'] = thread['forum']
-		post['thread'] = id
-		post['parent'] = post['parent'] if 'parent' in post else None
-		post['isEdited'] = post['isEdited'] if 'isEdited' in post else None
-
-		cursor.execute('''SELECT NEXTVAL('posts_id_seq')''')
-		post['id'] = dictfetchall(cursor)[0]['nextval']
-
-		post_values.append(post['id'])
-		post_values.append(post['message'])
-		post_values.append(post['author'])
-		post_values.append(post['forum'])
-		post_values.append(post['thread'])
-		post_values.append(post['created'])
-		post_values.append(post['parent'])
-		post_values.append(post['isEdited'])
-
-		author_nicknames.add(post['author'])
-
-		values.append(post_values)
-
-		if post['parent'] is not None:
+		if 'parent' in post:
 			parent = int(post['parent'])
 			if not parent in parents:
 				parents.append(parent)
@@ -88,17 +66,59 @@ def id_create(request, id, **kwargs):
 	if cursor.rowcount < counter:
 		cursor.close()
 		return JsonResponse({}, status = 409)
+	else:
+		parents_array = dictfetchall(cursor)
+		parent_dict = {}
+		for row in parents_array:
+			parent_dict[row['id']] = row['path']
+
+	
+	for post in params:
+
+		post_values = []
+
+		post['created'] = post['created'] if 'created' in post else all_created
+		post['forum'] = thread['forum']
+		post['thread'] = id
+		post['isEdited'] = post['isEdited'] if 'isEdited' in post else None
+
+		cursor.execute('''SELECT NEXTVAL('posts_id_seq')''')
+		post['id'] = dictfetchall(cursor)[0]['nextval']
+
+		if 'parent' in post:
+			post['parent'] = int(post['parent'])
+			post['path'] = parent_dict[post['parent']].copy()
+			post['path'].append(post['id'])
+		else:
+			post['parent'] = None
+			post['path'] = [post['id']]
+
+		post_values.append(post['id'])
+		post_values.append(post['message'])
+		post_values.append(post['author'])
+		post_values.append(post['forum'])
+		post_values.append(post['thread'])
+		post_values.append(post['created'])
+		post_values.append(post['parent'])
+		post_values.append(post['isEdited'])
+		post_values.append(post['path'])
+
+		author_nicknames.add(post['author'])
+
+		values.append(post_values)
+
 
 	formatQuery = postgreQueryFormat(CREATE_POST)
 	try:
 		cursor.execute("PREPARE posts_insert_plan AS " + formatQuery)
 	except psycopg2.Error as e:
+		# print(e)
 		pass
 
 	try:
-		execute_batch(cursor, "EXECUTE posts_insert_plan (%s, %s, %s, %s, %s, %s, %s, %s)", values)
+		execute_batch(cursor, "EXECUTE posts_insert_plan (%s, %s, %s, %s, %s, %s, %s, %s, %s)", values)
 	except psycopg2.Error as e:
-		# print(e.pgcode)
+		# print(e)
 		cursor.close()
 		return JsonResponse({}, status = 404)
 
@@ -127,11 +147,15 @@ def id_create(request, id, **kwargs):
 
 @csrf_exempt
 def slug_create(request, slug):
+	# print(request.path)
+
 	return id_create(request, slug)
 
 
 @csrf_exempt
 def id_vote(request, id):
+	# print(request.path)
+
 	params = json.loads(request.body.decode("utf-8"))
 	voice = params['voice']
 	nickname = params['nickname']
@@ -156,6 +180,8 @@ def id_vote(request, id):
 
 @csrf_exempt
 def slug_vote(request, slug):
+	# print(request.path)
+
 	conn = connectFromPool()
 	cursor = conn.cursor()
 	cursor.execute(SELECT_THREAD_BY_SLUG, [slug])
@@ -170,16 +196,22 @@ def slug_vote(request, slug):
 
 @csrf_exempt
 def id_details(request, id):
+	# print(request.path)
+
 	return details(request, SELECT_THREAD_BY_ID, id)
 
 
 @csrf_exempt
 def slug_details(request, slug):
+	# print(request.path)
+
 	return details(request, SELECT_THREAD_BY_SLUG, slug)
 
 
 @csrf_exempt
 def details(request,  query, identifier):
+	# print(request.path)
+
 	conn = connectFromPool()
 	cursor = conn.cursor()
 	cursor.execute(query, [identifier])
@@ -208,6 +240,8 @@ def details(request,  query, identifier):
 
 @csrf_exempt
 def id_posts(request, id):
+	# print(request.path)
+
 	sort = request.GET.get('sort', 'flat')
 	desc = request.GET.get('desc', 'false')
 
@@ -226,6 +260,8 @@ def id_posts(request, id):
 
 @csrf_exempt
 def slug_posts(request, slug):
+	# print(request.path)
+
 	sort = request.GET.get('sort', 'flat')
 	desc = request.GET.get('desc', 'false')
 
@@ -244,6 +280,8 @@ def slug_posts(request, slug):
 
 @csrf_exempt
 def posts(request, check_query, query, identifier):
+	# print(request.path)
+	
 	limit = int(request.GET.get('limit', False))
 	marker = request.GET.get('marker', False)
 	desc = request.GET.get('desc', False)

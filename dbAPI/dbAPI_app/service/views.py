@@ -16,6 +16,8 @@ from dbAPI_app.queries.service import *
 
 @csrf_exempt
 def test(request):
+	# print(request.path)
+
 	conn = connectFromPool()
 	cursor = conn.cursor()
 
@@ -34,6 +36,8 @@ def test(request):
 
 @csrf_exempt
 def status(request):
+	# print(request.path)
+
 	conn = connectFromPool()
 	cursor = conn.cursor()
 
@@ -46,15 +50,11 @@ def status(request):
 
 @csrf_exempt
 def clear(request):
+	# print(request.path)
+
 	conn = connectFromPool()
 	cursor = conn.cursor()
 
-	
-	# cursor.execute(CLEAR_VOTES)
-	# cursor.execute(CLEAR_POSTS)
-	# cursor.execute(CLEAR_THREADS)
-	# cursor.execute(CLEAR_FORUMS)
-	# cursor.execute(CLEAR_USERS)
 	cursor.execute(TRUNCATE_ALL)
 
 	cursor.close()

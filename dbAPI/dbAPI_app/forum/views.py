@@ -17,6 +17,8 @@ from dbAPI_app.queries.common import *
 
 @csrf_exempt
 def create(request):
+	# print(request.path)
+
 	params = json.loads(request.body.decode("utf-8"))
 	slug = params['slug']
 	title = params['title']
@@ -52,6 +54,8 @@ def create(request):
 
 @csrf_exempt
 def details(request, slug):
+	# print(request.path)
+
 	conn = connectFromPool()
 	cursor = conn.cursor()
 	cursor.execute(SELECT_FORUM_BY_SLUG, [slug])
@@ -67,6 +71,8 @@ def details(request, slug):
 
 @csrf_exempt
 def create_thread(request, slug):
+	# print(request.path)
+
 	params = json.loads(request.body.decode("utf-8"))
 	author = params['author']
 	message = params['message']
@@ -121,6 +127,8 @@ def create_thread(request, slug):
 
 @csrf_exempt
 def get_threads(request, slug):
+	# print(request.path)
+
 	limit = request.GET.get('limit', False)
 	since = request.GET.get('since', False)
 	desc = request.GET.get('desc', False)
@@ -163,6 +171,8 @@ def get_threads(request, slug):
 
 @csrf_exempt
 def get_users(request, slug):
+	# print(request.path)
+	
 	limit = request.GET.get('limit', False)
 	since = request.GET.get('since', False)
 	desc = request.GET.get('desc', False)

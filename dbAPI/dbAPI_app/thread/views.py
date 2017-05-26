@@ -87,16 +87,16 @@ def id_create(request, id, **kwargs):
 		post['id'] = ids.pop(0)
 
 		if 'parent' in post:
-			post['parent'] = int(post['parent'])
-			path = parent_dict[post['parent']].copy()
+			parent = post['parent'] = int(post['parent'])
+			path = parent_dict[parent].copy()
 			path.append(post['id'])
 		else:
-			post['parent'] = 0
+			parent = 0
 			path = [post['id']]
 
 		root_id = path[0]
 
-		post['isEdited'] = post['isEdited'] if 'isEdited' in post else None
+		post['isEdited'] = post['isEdited'] if 'isEdited' in post else False
 		post['created'] = post['created'] if 'created' in post else all_created
 		post['thread'] = id
 
@@ -106,7 +106,7 @@ def id_create(request, id, **kwargs):
 		post_values.append(post['forum'])
 		post_values.append(post['thread'])
 		post_values.append(post['created'])
-		post_values.append(post['parent'])
+		post_values.append(parent)
 		post_values.append(post['isEdited'])
 		post_values.append(path)
 		post_values.append(root_id)

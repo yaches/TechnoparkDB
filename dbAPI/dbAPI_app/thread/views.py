@@ -72,6 +72,11 @@ def id_create(request, id, **kwargs):
 		for row in parents_array:
 			parent_dict[row['id']] = row['path']
 
+	cursor.execute('SELECT get_ids(%s)', [adding_posts])
+	ids_list_dict = dictfetchall(cursor)
+	ids = []
+	for id_dict in ids_list_dict:
+		ids += id_dict.values()
 	
 	for post in params:
 
@@ -79,15 +84,14 @@ def id_create(request, id, **kwargs):
 
 		post['forum'] = thread['forum']
 
-		cursor.execute('''SELECT NEXTVAL('posts_id_seq')''')
-		post['id'] = dictfetchall(cursor)[0]['nextval']
+		post['id'] = ids.pop(0)
 
 		if 'parent' in post:
 			post['parent'] = int(post['parent'])
 			path = parent_dict[post['parent']].copy()
 			path.append(post['id'])
 		else:
-			post['parent'] = None
+			post['parent'] = 0
 			path = [post['id']]
 
 		root_id = path[0]

@@ -55,7 +55,7 @@ SELECT_POSTS_BY_THREAD_ID_PARENT_TREE = u'''
 			SELECT * FROM "posts"
 			WHERE "root_id" IN (
 				SELECT "id" FROM "posts"
-				WHERE "parent" IS NULL AND "thread" = %%s
+				WHERE "parent" = 0 AND "thread" = %%s
 				ORDER BY "id" %s
 				LIMIT %s OFFSET %s
 			)
@@ -66,7 +66,7 @@ SELECT_POSTS_BY_THREAD_SLUG_PARENT_TREE = u'''
 			SELECT * FROM "posts"
 			WHERE "root_id" IN (
 				SELECT "id" FROM "posts"
-				WHERE "parent" IS NULL AND "thread" = (
+				WHERE "parent" = 0 AND "thread" = (
 					SELECT "id" FROM "threads"
 					WHERE "slug" = %%s
 				)

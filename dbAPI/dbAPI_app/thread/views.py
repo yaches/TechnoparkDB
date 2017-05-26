@@ -90,6 +90,8 @@ def id_create(request, id, **kwargs):
 			post['parent'] = None
 			path = [post['id']]
 
+		root_id = path[0]
+
 		post['isEdited'] = post['isEdited'] if 'isEdited' in post else None
 		post['created'] = post['created'] if 'created' in post else all_created
 		post['thread'] = id
@@ -103,6 +105,7 @@ def id_create(request, id, **kwargs):
 		post_values.append(post['parent'])
 		post_values.append(post['isEdited'])
 		post_values.append(path)
+		post_values.append(root_id)
 
 		author_nicknames.add(post['author'])
 
@@ -113,15 +116,21 @@ def id_create(request, id, **kwargs):
 	try:
 		cursor.execute("PREPARE posts_insert_plan AS " + formatQuery)
 	except psycopg2.Error as e:
-		# print(e)
-		pass
+		if e.pgcode == '42P05':
+			pass
+		else:
+			print(e.pgcode)
+			print(e)
 
 	try:
-		execute_batch(cursor, "EXECUTE posts_insert_plan (%s, %s, %s, %s, %s, %s, %s, %s, %s)", values)
+		execute_batch(cursor, "EXECUTE posts_insert_plan (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", values)
 	except psycopg2.Error as e:
-		# print(e)
-		cursor.close()
-		return JsonResponse({}, status = 404)
+		if e.pgcode == '23503':
+			cursor.close()
+			return JsonResponse({}, status = 404)
+		else:
+			print(e.pgcode)
+			print(e)
 
 	cursor.execute(INCREASE_FORUM_POSTS, [adding_posts, thread['forum']])
 
@@ -134,13 +143,17 @@ def id_create(request, id, **kwargs):
 	try:
 		cursor.execute("PREPARE forum_users_insert_plan AS " + postgreQueryFormat(ADD_FORUM_USER))
 	except psycopg2.Error as e:
-		pass
+		if e.pgcode == '42P05':
+			pass
+		else:
+			print(e.pgcode)
+			print(e)
 
 	try:
 		execute_batch(cursor, "EXECUTE forum_users_insert_plan (%s, %s)", author_nicknames_values)
 	except psycopg2.Error as e:
-		# print(e.pgcode)
-		pass
+		print(e.pgcode)
+		print(e)
 
 	cursor.close()
 	return JsonResponse(params, status = 201, safe = False)
@@ -166,10 +179,12 @@ def id_vote(request, id):
 	try:
 		cursor.execute('SELECT update_or_insert_votes(CAST(%s AS CITEXT), %s, %s)', [nickname, id, voice])
 	except psycopg2.Error as e:
-		# print(e)
-		# print(e.pgcode)
-		cursor.close()
-		return JsonResponse({}, status = 404)
+		if e.pgcode == '23503':
+			cursor.close()
+			return JsonResponse({}, status = 404)
+		else:
+			print(e.pgcode)
+			print(e)
 
 	cursor.execute(SELECT_THREAD_BY_ID, [id])
 	thread = dictfetchall(cursor)[0]

@@ -65,9 +65,13 @@ def profile(request, nickname):
 			cursor.execute(UPDATE_USER, [
 				params['email'], params['fullname'], params['about'], nickname
 			])
-		except psycopg2.IntegrityError:
-			cursor.close()
-			return JsonResponse({}, status = 409)
+		except psycopg2.Error as e:
+			if e.pgcode == '23505':
+				cursor.close()
+				return JsonResponse({}, status = 409)
+			else:
+				print(e.pgcode)
+				print(e)
 
 		cursor.close()
 		return JsonResponse(params, status = 200)

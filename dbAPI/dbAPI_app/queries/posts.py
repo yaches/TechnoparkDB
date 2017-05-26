@@ -1,6 +1,6 @@
 CREATE_POST = u'''INSERT INTO "posts"
-			("id", "message", "author", "forum", "thread", "created", "parent", "isEdited", "path")
-			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+			("id", "message", "author", "forum", "thread", "created", "parent", "isEdited", "path", "root_id")
+			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 		'''
 
 POST_UPDATE_MESSAGE = u'''
@@ -37,22 +37,6 @@ SELECT_POSTS_BY_THREAD_SLUG_DESC = u'''
 			) ORDER BY "created" DESC, "id" DESC
 		'''
 
-# SELECT_POSTS_BY_THREAD_ID_TREE = u'''
-# 			WITH RECURSIVE recursetree (id, message, author, forum, thread, parent, created, isEdited, path) AS (
-# 					SELECT posts.*, array_append('{}'::int[], id) FROM posts
-# 					WHERE parent IS NULL
-# 						AND "thread" = %s
-# 				UNION ALL
-# 					SELECT p.*, array_append(path, p.id)
-# 					FROM posts AS p
-# 					JOIN recursetree rt ON rt.id = p.parent
-# 			)
-# 			SELECT rt.*, array_to_string(path, '.') as path1 
-# 			FROM recursetree AS rt
-# 			ORDER BY path
-# 		'''
-
-
 SELECT_POSTS_BY_THREAD_ID_TREE = u''' 
 			SELECT * FROM "posts"
 			WHERE "thread" = %s
@@ -67,27 +51,9 @@ SELECT_POSTS_BY_THREAD_SLUG_TREE = u'''
 			ORDER BY path
 '''
 
-# SELECT_POSTS_BY_THREAD_SLUG_TREE = u'''
-# 			WITH RECURSIVE recursetree (id, message, author, forum, thread, parent, created, isEdited, path) AS (
-# 					SELECT posts.*, array_append('{}'::int[], id) FROM posts
-# 					WHERE parent IS NULL
-# 						AND "thread" = (
-# 							SELECT "id" FROM "threads"
-# 							WHERE "slug" = %s
-# 						)
-# 				UNION ALL
-# 					SELECT p.*, array_append(path, p.id)
-# 					FROM posts AS p
-# 					JOIN recursetree rt ON rt.id = p.parent
-# 			)
-# 			SELECT rt.*, array_to_string(path, '.') as path1 
-# 			FROM recursetree AS rt
-# 			ORDER BY path
-# 		'''
-
 SELECT_POSTS_BY_THREAD_ID_PARENT_TREE = u''' 
 			SELECT * FROM "posts"
-			WHERE "path"[1] IN (
+			WHERE "root_id" IN (
 				SELECT "id" FROM "posts"
 				WHERE "parent" IS NULL AND "thread" = %%s
 				ORDER BY "id" %s
@@ -98,7 +64,7 @@ SELECT_POSTS_BY_THREAD_ID_PARENT_TREE = u'''
 
 SELECT_POSTS_BY_THREAD_SLUG_PARENT_TREE = u'''
 			SELECT * FROM "posts"
-			WHERE "path"[1] IN (
+			WHERE "root_id" IN (
 				SELECT "id" FROM "posts"
 				WHERE "parent" IS NULL AND "thread" = (
 					SELECT "id" FROM "threads"
@@ -109,43 +75,6 @@ SELECT_POSTS_BY_THREAD_SLUG_PARENT_TREE = u'''
 			)
 			ORDER BY "path"
 '''
-
-# SELECT_POSTS_BY_THREAD_ID_PARENT_TREE = u'''
-# 			WITH RECURSIVE recursetree (id, message, author, forum, thread, parent, created, isEdited, path_new) AS (
-# 					(SELECT posts.*, array_append('{}'::int[], id) FROM posts
-# 					WHERE parent IS NULL
-# 						AND "thread" = %%s
-# 					ORDER BY "id" %s
-# 					LIMIT %s OFFSET %s)
-# 				UNION ALL
-# 					SELECT p.*, array_append(path_new, p.id)
-# 					FROM posts AS p
-# 					JOIN recursetree rt ON rt.id = p.parent
-# 			)
-# 			SELECT rt.*, array_to_string(path_new, '.') as path1 
-# 			FROM recursetree AS rt
-# 			ORDER BY path_new
-# 		'''
-
-# SELECT_POSTS_BY_THREAD_SLUG_PARENT_TREE = u'''
-# 			WITH RECURSIVE recursetree (id, message, author, forum, thread, parent, created, isEdited, path_new) AS (
-# 					(SELECT posts.*, array_append('{}'::int[], id) FROM posts
-# 					WHERE parent IS NULL AND
-# 					"thread" = (
-# 						SELECT "id" FROM "threads"
-# 						WHERE "slug" = %%s
-# 					)
-# 					ORDER BY "id" %s
-# 					LIMIT %s OFFSET %s)
-# 				UNION ALL
-# 					SELECT p.*, array_append(path_new, p.id)
-# 					FROM posts AS p
-# 					JOIN recursetree rt ON rt.id = p.parent
-# 			)
-# 			SELECT rt.*, array_to_string(path_new, '.') as path1 
-# 			FROM recursetree AS rt
-# 			ORDER BY path_new
-# 		'''
 
 SELECT_POST_BY_ID = u'''
 			SELECT * FROM "posts" AS p

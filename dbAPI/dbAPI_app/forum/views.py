@@ -44,9 +44,13 @@ def create(request):
 		cursor.execute(CREATE_FORUM, [
 			slug, title, user, posts, threads
 		])
-	except psycopg2.IntegrityError:
-		cursor.close()
-		return JsonResponse({}, status = 404)
+	except psycopg2.Error as e:
+		if e.pgcode == '23503' or e.pgcode == '23502':
+			cursor.close()
+			return JsonResponse({}, status = 404)
+		else:
+			print(e.pgcode)
+			print(e)
 
 	cursor.close()
 	return JsonResponse(params, status = 201)
@@ -103,10 +107,12 @@ def create_thread(request, slug):
 			title, message, author, slug, created, thread_slug
 		])
 	except psycopg2.Error as e:
-		# print(e)
-		# print(e.pgcode)
-		cursor.close()
-		return JsonResponse({}, status = 404)
+		if e.pgcode == '23503':
+			cursor.close()
+			return JsonResponse({}, status = 404)
+		else:
+			print(e.pgcode)
+			print(e)
 
 	thread_id = dictfetchall(cursor)[0]['id']
 	params['id'] = thread_id
@@ -117,9 +123,8 @@ def create_thread(request, slug):
 	try:
 		cursor.execute(ADD_FORUM_USER, [author, slug])
 	except psycopg2.Error as e:
-		# print(e)
-		# print(e.pgcode)
-		pass
+		print(e)
+		print(e.pgcode)
 
 	cursor.close()
 	return JsonResponse(params, status = 201)

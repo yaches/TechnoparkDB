@@ -67,9 +67,12 @@ CREATE TABLE IF NOT EXISTS "posts" (
 	"parent" INTEGER DEFAULT NULL REFERENCES "posts" ("id"),
 	"created" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	"isEdited" BOOLEAN DEFAULT FALSE,
-	"path" INT[] NOT NULL
+	"path" INT[] NOT NULL,
+	"root_id" INTEGER DEFAULT NULL REFERENCES "posts" ("id")
 );
 
+CREATE INDEX IF NOT EXISTS posts_root_idx
+	ON "posts" ("root_id");
 
 CREATE INDEX IF NOT EXISTS posts_author_idx
 	ON "posts" ("author");
